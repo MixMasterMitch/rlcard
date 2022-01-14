@@ -42,7 +42,7 @@ def learn(position,
           mean_episode_return_buf,
           lock):
     """Performs a learning (optimization) step."""
-    device = torch.device('cuda:'+str(training_device))
+    device = torch.device('cpu')
     state = torch.flatten(batch['state'].to(device), 0, 1).float()
     action = torch.flatten(batch['action'].to(device), 0, 1).float()
     target = torch.flatten(batch['target'].to(device), 0, 1)

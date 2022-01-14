@@ -44,11 +44,11 @@ class DMCAgent:
     def __init__(self,
                  state_shape,
                  action_shape,
-                 mlp_layers=[512,512,512,512,512],
+                 mlp_layers=[64],
                  exp_epsilon=0.01,
                  device=0):
         self.use_raw = False
-        self.device = torch.device('cuda:'+str(device))
+        self.device = torch.device('cpu')
         self.net = DMCNet(state_shape, action_shape, mlp_layers).to(self.device)
         self.exp_epsilon = exp_epsilon
         self.action_shape = action_shape

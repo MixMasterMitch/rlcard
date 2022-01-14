@@ -42,3 +42,8 @@ register(
     env_id='gin-rummy',
     entry_point='rlcard.envs.gin_rummy:GinRummyEnv',
 )
+
+register(
+    env_id='go_fish',
+    entry_point='rlcard.envs.go_fish:GoFishEnv',
+)

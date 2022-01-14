@@ -25,7 +25,13 @@ def train(args):
         from rlcard.agents import DQNAgent
         agent = DQNAgent(num_actions=env.num_actions,
                          state_shape=env.state_shape[0],
-                         mlp_layers=[64,64],
+                         mlp_layers=[64, 64],
+                         discount_factor=0.999,
+                         # update_target_estimator_every=2000,
+                         replay_memory_init_size=500,
+                         batch_size=128,
+                         # epsilon_decay_steps=1000000,
+                         learning_rate=0.000005,
                          device=device)
     elif args.algorithm == 'nfsp':
         from rlcard.agents import NFSPAgent
@@ -76,13 +82,13 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("DQN/NFSP example in RLCard")
     parser.add_argument('--env', type=str, default='leduc-holdem',
-            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy'])
+            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish'])
     parser.add_argument('--algorithm', type=str, default='dqn', choices=['dqn', 'nfsp'])
     parser.add_argument('--cuda', type=str, default='')
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num_episodes', type=int, default=5000)
-    parser.add_argument('--num_eval_games', type=int, default=2000)
-    parser.add_argument('--evaluate_every', type=int, default=100)
+    parser.add_argument('--num_episodes', type=int, default=100000)
+    parser.add_argument('--num_eval_games', type=int, default=5000)
+    parser.add_argument('--evaluate_every', type=int, default=2000)
     parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_dqn_result/')
 
     args = parser.parse_args()

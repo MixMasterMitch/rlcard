@@ -29,7 +29,7 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("DMC example in RLCard")
     parser.add_argument('--env', type=str, default='leduc-holdem',
-            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy'])
+            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish'])
     parser.add_argument('--cuda', type=str, default='1')
     parser.add_argument('--load_model', action='store_true',
                     help='Load an existing model')

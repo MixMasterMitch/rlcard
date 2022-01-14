@@ -29,3 +29,11 @@ register(
 register(
     model_id='gin-rummy-novice-rule',
     entry_point='rlcard.models.gin_rummy_rule_models:GinRummyNoviceRuleModel')
+
+register(
+    model_id = 'go-fish-v1',
+    entry_point='rlcard.models.go_fish_rule_models:GoFishRuleModelV1')
+
+register(
+    model_id = 'go-fish-v2',
+    entry_point='rlcard.models.go_fish_rule_models:GoFishRuleModelV2')

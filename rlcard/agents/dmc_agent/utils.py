@@ -46,7 +46,7 @@ def get_batch(free_queue,
 
 def create_buffers(T, num_buffers, state_shape, action_shape):
     buffers = []
-    for device in range(torch.cuda.device_count()):
+    for device in range(1):
         buffers.append([])
         for player_id in range(len(state_shape)):
             specs = dict(
@@ -59,7 +59,7 @@ def create_buffers(T, num_buffers, state_shape, action_shape):
             _buffers: Buffers = {key: [] for key in specs}
             for _ in range(num_buffers):
                 for key in _buffers:
-                    _buffer = torch.empty(**specs[key]).to(torch.device('cuda:'+str(device))).share_memory_()
+                    _buffer = torch.empty(**specs[key]).to(torch.device('cpu')).share_memory_()
                     _buffers[key].append(_buffer)
             buffers[device].append(_buffers)
     return buffers
