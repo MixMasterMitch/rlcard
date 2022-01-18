@@ -34,7 +34,7 @@ class GoFishEnv(Env):
         obs_list.extend(rotated_counts)
         rotated_book_counts = [len(books) for books in self.rotate_list(state['books'], player_id)]
         obs_list.extend(rotated_book_counts)
-        rotated_known_hands = [self.known_hand_dict_to_list(known_hand) for known_hand in self.rotate_list(state['known_hands'], player_id)]
+        rotated_known_hands = [self.known_hand_dict_to_list(known_hand) for known_hand in self.rotate_list(state['public_cards'], player_id)]
         obs_list.extend([x for y in rotated_known_hands for x in y])
         obs_list.append(state['deck_size'])
         player_hand = self.rank_dict_to_list(cards_by_rank(state['player_hand']))
@@ -76,6 +76,7 @@ class GoFishEnv(Env):
     def known_hand_dict_to_list(rank_dict):
         rank_list = []
         for rank in Card.valid_rank:
-            rank_list.append(rank_dict.get(rank, 0))
+            # print(rank_dict)
+            rank_list.append(len(rank_dict.get(rank, [])))
         return rank_list
 

@@ -31,13 +31,44 @@ class HumanAgent(object):
         for i in range(num_players):
             print('===============   Player {} Hand   ==============='.format(i))
             print('Books: {}'.format(len(raw_state['books'][i])))
+
+            public_cards = raw_state['public_cards'][i]
+            num_public_cards = 0
+            print('Public cards:')
+            if len(public_cards) > 0:
+                for rank, cards_of_rank in public_cards.items():
+                    num_cards = len(cards_of_rank)
+                    print('\t{} cards of rank {}'.format(num_cards, rank))
+                    num_public_cards = num_public_cards + num_cards
+            else:
+                print('\tNone')
+            
+            public_possible_cards_of_rank = raw_state['public_possible_cards_of_rank'][i]
+            print('Public possible cards of rank:')
+            if len(public_possible_cards_of_rank) > 0:
+                for rank, cards_of_rank in public_possible_cards_of_rank.items():
+                    print('\t1 of {} cards must be of rank {}'.format(len(cards_of_rank), rank))
+            else:
+                print('\tNone')
+            
+            public_not_possible_cards_of_rank = raw_state['public_not_possible_cards_of_rank'][i]
+            print('Public possible cards of rank:')
+            if len(public_not_possible_cards_of_rank) > 0:
+                for rank, cards_of_rank in public_not_possible_cards_of_rank.items():
+                    print('\t{} cards in the hand must not be of rank {}'.format(num_public_cards + len(cards_of_rank), rank))
+            else:
+                print('\tNone')
+
             if i == 0:
                 print_card(raw_state['player_hand'])
             else:
                 print_card([None] * raw_state['card_counts'][i])
 
         print('\n=========== Actions You Can Choose ===========')
-        print(', '.join([str(index) + ': ' + str(action) for index, action in enumerate(state['raw_legal_actions'])]))
+        for index, action in enumerate(state['raw_legal_actions']):
+            player = action[0]
+            rank = action[2]
+            print('{}: Ask for {}s from Player {}'.format(index, rank, player))
         print('')
         action = int(input('>> You choose action (integer): '))
         while action < 0 or action >= len(state['legal_actions']):

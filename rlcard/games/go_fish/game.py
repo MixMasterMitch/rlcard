@@ -42,6 +42,8 @@ class GoFishGame:
         for i in range(hand_size):
             for j in range(self.num_players):
                 self.dealer.deal_card(self.players[j])
+                # On the initial draw, we do no need to call clean_up_rank on other players for any completed books 
+                # because the other players should not have any rank data at this point.
 
         # Choose a random starting player
         self.current_player_turn = self.np_random.randint(self.num_players)
@@ -65,16 +67,16 @@ class GoFishGame:
         self._print('>> Player {} requested {}s from player {}'.format(player.player_id, target_rank, target_player.player_id))
         next_players_turn = True
 
-        if target_rank not in player.known_hand:
-            player.known_hand[target_rank] = 1
-
+        player.mark_rank_as_requested(target_rank)
         netted_cards = target_player.remove_cards_of_rank(target_rank)
+        completed_books = player.receive_cards(netted_cards, True)
+        for book_rank in completed_books:
+            self._cleanup_rank_data_for_other_players(book_rank)
 
         # got what the player was looking for
         if len(netted_cards) > 0:
             self._print('<< Got {} cards'.format(len(netted_cards)))
             next_players_turn = False
-            player.receive_cards(netted_cards, True)
 
         # go fish (if there are cards left)
         else:
@@ -88,8 +90,12 @@ class GoFishGame:
                 if fished_card.rank == target_rank:
                     self._print('<< But drew what was asked!')
                     next_players_turn = False
-                    if target_rank in player.known_hand: # if the target rank is not in the known hand then a book was just made
-                        player.known_hand[target_rank] = player.known_hand[target_rank] + 1
+                    if fished_card in player.hand: # It is possible that the fished card created a completed book and is implicitly revealed
+                        player.reveal_card(fished_card)
+
+                # If a book was completed using the drawn card, cleanup the rank data for the other players       
+                if fished_card not in player.hand:
+                    self._cleanup_rank_data_for_other_players(fished_card.rank)
             else:
                 self._print('<< Could not draw a card because there are none left')
 
@@ -104,9 +110,9 @@ class GoFishGame:
                 next_players_turn = True
 
         if next_players_turn:
-            for i in range(self.num_players - 1):
+            for i in range(1, self.num_players):
                 self._print('-- Next player turn')
-                candidate_next_player_id = (self.current_player_turn + 1 + i) % self.num_players
+                candidate_next_player_id = (self.current_player_turn + i) % self.num_players
                 if len(self.players[candidate_next_player_id].hand) == 0:
                     self._print('>> Player {} has no cards'.format(candidate_next_player_id))
                 else:
@@ -114,6 +120,12 @@ class GoFishGame:
                     break
 
         return self.get_state(self.current_player_turn), self.current_player_turn
+
+    def _cleanup_rank_data_for_other_players(self, rank):
+        for i in range(1, self.num_players):
+            player = self.players[(self.current_player_turn + i) % self.num_players]
+            player.clean_up_rank(rank)
+
 
     def get_num_players(self):
         ''' Return the number of players in go fish
@@ -168,23 +180,31 @@ class GoFishGame:
             state (dict): corresponding player's state
                 'legal_actions',
                 'card_counts',
-                'known_hands',
+                'public_cards',
+                'public_possible_cards_of_rank',
+                'public_not_possible_cards_of_rank',
                 'books',
                 'player_hand',
                 'deck_size'
         '''
         state = {}
         card_counts = []
-        known_hands = []
+        public_cards = []
+        public_possible_cards_of_rank = []
+        public_not_possible_cards_of_rank = []
         books = []
         for player in self.players:
             card_counts.append(len(player.hand))
-            known_hands.append(player.known_hand)
+            public_cards.append(player.public_cards)
+            public_possible_cards_of_rank.append(player.public_possible_cards_of_rank)
+            public_not_possible_cards_of_rank.append(player.public_not_possible_cards_of_rank)
             books.append(player.books)
 
         state['legal_actions'] = self._get_legal_actions(player_id)
         state['card_counts'] = card_counts
-        state['known_hands'] = known_hands
+        state['public_cards'] = public_cards
+        state['public_possible_cards_of_rank'] = public_possible_cards_of_rank
+        state['public_not_possible_cards_of_rank'] = public_not_possible_cards_of_rank
         state['books'] = books
         state['player_hand'] = self.players[player_id].hand
         state['deck_size'] = len(self.dealer.deck)

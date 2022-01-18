@@ -12,10 +12,10 @@ num_players = 2
 env = rlcard.make('go_fish', config={'game_num_players': num_players, 'game_debug': True})
 human_agent = HumanAgent(env.num_actions)
 device = get_device()
-ai_agent = torch.load('experiments/leduc_holdem_dqn_result_19/model.pth', map_location=device)
-ai_agent.set_device(device)
-# random_agent_1 = RandomAgent(env.num_actions)
-env.set_agents([human_agent, ai_agent])
+# ai_agent = torch.load('experiments/leduc_holdem_dqn_result_19/model.pth', map_location=device)
+# ai_agent.set_device(device)
+random_agent_1 = RandomAgent(env.num_actions)
+env.set_agents([human_agent, random_agent_1])
 
 print(">> Gofish human agent")
 

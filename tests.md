@@ -1,3 +1,11 @@
+Timelog:
+1/12, 8
+1/13, 4
+1/14, 2
+1/15, 1
+1/16, 1
+1/17, 2
+
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
 Basic Rule-base Model 2 =  0.1635 (58% win) vs random, 0.2917 (65% win) vs rule model 1
 Tests:
