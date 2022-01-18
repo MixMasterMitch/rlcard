@@ -1,5 +1,6 @@
 from rlcard.games.go_fish.utils import cards_by_rank
 from rlcard.games.base import Card
+import itertools
 
 class GoFishPlayer:
 
@@ -73,11 +74,15 @@ class GoFishPlayer:
         ''' Specifically, this player has requested the given rank of another player.
         '''
         # If the rank has already been requested, then re-requesting has no effect
-        if rank in self.public_possible_cards_of_rank:
+        if rank in self.public_possible_cards_of_rank or rank in self.public_cards:
             return
 
         # Otherwise, all cards that are not public should be marked as being of the given rank
+        # But exclude cards that are already known to not be of the given rank
         non_public_cards_in_hand = self._get_non_public_cards_in_hand()
+        if rank in self.public_not_possible_cards_of_rank:
+            for not_possible_card in self.public_not_possible_cards_of_rank[rank]:
+                non_public_cards_in_hand.remove(not_possible_card)
         print('Marking {} as containing at least one card of rank {} for player {}'.format(non_public_cards_in_hand, rank, self.player_id))
         self.public_possible_cards_of_rank[rank] = non_public_cards_in_hand
 
@@ -91,6 +96,10 @@ class GoFishPlayer:
         return non_public_cards_in_hand
 
     def reveal_card(self, card):
+        self._reveal_card(card)
+        self._reveal_cards_by_process_of_elimination()
+
+    def _reveal_card(self, card):
         rank = card.rank
 
         # Add card to public cards
@@ -141,20 +150,52 @@ class GoFishPlayer:
         return removed_cards
 
     def _reveal_cards_by_process_of_elimination(self):
-        cards_to_reveal = []
-        for card in self._get_non_public_cards_in_hand():
-            possible_ranks = list(self.remaining_ranks)
-            for rank, not_possible_cards in self.public_not_possible_cards_of_rank.items():
-                if card in not_possible_cards:
-                    possible_ranks.remove(rank)
-            if len(possible_ranks) == 1:
-                cards_to_reveal.append(card)
-        # It is possible that the same card is marked to be revealed multiple times. So make sure the card still needs to be revealed
-        for card_to_reveal in cards_to_reveal:
-            rank = card_to_reveal.rank
-            if rank not in self.public_cards or card_to_reveal not in self.public_cards[rank]:
-                print('By process of elimination, revealing {} for player {}'.format(card_to_reveal, self.player_id))
-                self.reveal_card(card_to_reveal)
+        while True:
+            cards_to_reveal = []
+
+            # Look if there are any cards that can only be one possible rank based on what it can't be
+            for card in self._get_non_public_cards_in_hand():
+                possible_ranks = list(self.remaining_ranks)
+                for rank, not_possible_cards in self.public_not_possible_cards_of_rank.items():
+                    if card in not_possible_cards:
+                        possible_ranks.remove(rank)
+                if len(possible_ranks) == 1:
+                    cards_to_reveal.append(card)
+
+            # Look for matching possible card sets (e.g. if there are 2 possible card sets each with only the same two cards, those cards can be revealed)
+            card_sets_by_length = {} # length -> cards[][]
+            for rank, card_set in self.public_possible_cards_of_rank.items():
+                length = len(card_set)
+                card_sets_of_length = card_sets_by_length.get(length, [])
+                card_sets_of_length.append(set(card_set))
+                card_sets_by_length[length] = card_sets_of_length
+            for length, card_sets in card_sets_by_length.items():
+                if len(card_sets) < length:
+                    continue
+                combinations = itertools.combinations(card_sets, length)
+                for combination in combinations:
+                    matching_combination = True
+                    for i in range(1, len(combination)):
+                        if combination[i] != combination[0]:
+                            print('did not match')
+                            print(combination[0])
+                            print(combination[i])
+                            matching_combination = False
+                            break
+                    if matching_combination:
+                        print('Discovered {} matching card sets. Revealing {} for player {}'.format(length, combination[0], self.player_id))
+                        cards_to_reveal.extend(combination[0])
+
+            # It is possible that the same card is marked to be revealed multiple times. So make sure the card still needs to be revealed
+            for card_to_reveal in cards_to_reveal:
+                rank = card_to_reveal.rank
+                if rank not in self.public_cards or card_to_reveal not in self.public_cards[rank]:
+                    print('By process of elimination, revealing {} for player {}'.format(card_to_reveal, self.player_id))
+                    self._reveal_card(card_to_reveal)
+
+            # Keep iterating until there are no more cards to reveal
+            if len(cards_to_reveal) == 0:
+                break
 
 
     def _clean_up_card(self, card):
