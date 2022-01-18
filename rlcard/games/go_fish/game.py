@@ -41,9 +41,8 @@ class GoFishGame:
         hand_size = 5 if self.num_players >= 4 else 7
         for i in range(hand_size):
             for j in range(self.num_players):
-                self.dealer.deal_card(self.players[j])
-                # On the initial draw, we do no need to call clean_up_rank on other players for any completed books 
-                # because the other players should not have any rank data at this point.
+                _, completed_books = self.dealer.deal_card(self.players[j])
+                self._report_completed_books_to_other_players(completed_books)
 
         # Choose a random starting player
         self.current_player_turn = self.np_random.randint(self.num_players)
@@ -70,8 +69,7 @@ class GoFishGame:
         player.mark_rank_as_requested(target_rank)
         netted_cards = target_player.remove_cards_of_rank(target_rank)
         completed_books = player.receive_cards(netted_cards, True)
-        for book_rank in completed_books:
-            self._cleanup_rank_data_for_other_players(book_rank)
+        self._report_completed_books_to_other_players(completed_books)
 
         # got what the player was looking for
         if len(netted_cards) > 0:
@@ -83,7 +81,7 @@ class GoFishGame:
             self._print('<< GO FISH!')
 
             if len(self.dealer.deck) > 0:
-                fished_card = self.dealer.deal_card(player)
+                fished_card, completed_books = self.dealer.deal_card(player)
 
                 # fished the card they requested
                 # player must reveal the card but it remains their turn
@@ -94,8 +92,7 @@ class GoFishGame:
                         player.reveal_card(fished_card)
 
                 # If a book was completed using the drawn card, cleanup the rank data for the other players       
-                if fished_card not in player.hand:
-                    self._cleanup_rank_data_for_other_players(fished_card.rank)
+                self._report_completed_books_to_other_players(completed_books)
             else:
                 self._print('<< Could not draw a card because there are none left')
 
@@ -121,10 +118,11 @@ class GoFishGame:
 
         return self.get_state(self.current_player_turn), self.current_player_turn
 
-    def _cleanup_rank_data_for_other_players(self, rank):
-        for i in range(1, self.num_players):
-            player = self.players[(self.current_player_turn + i) % self.num_players]
-            player.clean_up_rank(rank)
+    def _report_completed_books_to_other_players(self, completed_books):
+        for book in completed_books:
+            for i in range(1, self.num_players):
+                player = self.players[(self.current_player_turn + i) % self.num_players]
+                player.mark_book_completed(book)
 
 
     def get_num_players(self):

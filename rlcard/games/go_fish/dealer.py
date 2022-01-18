@@ -24,5 +24,5 @@ class GoFishDealer:
             player_id (int): the target player's id
         '''
         card = self.deck.pop()
-        player.receive_cards([card], False)
-        return card
+        completed_books = player.receive_cards([card], False)
+        return (card, completed_books)
