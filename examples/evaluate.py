@@ -5,7 +5,7 @@ import argparse
 
 import rlcard
 from rlcard.agents import DQNAgent, RandomAgent
-from rlcard.utils import get_device, set_seed, tournament
+from rlcard.utils import get_device, set_seed, tournament, StatsTracker
 
 def load_model(model_path, env=None, position=None, device=None):
     if os.path.isfile(model_path):  # Torch model
@@ -34,7 +34,8 @@ def evaluate(args):
     set_seed(args.seed)
 
     # Make the environment with seed
-    env = rlcard.make(args.env, config={'seed': args.seed})
+    stats_tracker = StatsTracker()
+    env = rlcard.make(args.env, config={'seed': args.seed, 'game_stats_tracker': stats_tracker, 'game_debug': False})
 
     # Load models
     agents = []
@@ -46,6 +47,7 @@ def evaluate(args):
     rewards = tournament(env, args.num_games)
     for position, reward in enumerate(rewards):
         print(position, args.models[position], reward)
+    print(stats_tracker.finalize())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Evaluation example in RLCard")

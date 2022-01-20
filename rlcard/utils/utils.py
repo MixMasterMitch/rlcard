@@ -246,3 +246,17 @@ def plot_curve(csv_path, save_path, algorithm):
 
         fig.savefig(save_path)
 
+class StatsTracker:
+    count = 0
+    mean = 0
+    m2 = 0
+
+    def update(self, value):
+        self.count += 1
+        delta = value - self.mean
+        self.mean += delta / self.count
+        delta2 = value - self.mean
+        self.m2 += delta * delta2
+
+    def finalize(self):
+        return (self.mean, self.m2 / self.count)

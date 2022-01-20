@@ -5,10 +5,12 @@ from rlcard.envs import Env
 from rlcard.games.go_fish import Game
 from rlcard.games.go_fish.utils import cards_by_rank
 from rlcard.games.base import Card
+from rlcard.utils import StatsTracker
 
 DEFAULT_GAME_CONFIG = {
     'game_num_players': 2,
     'game_debug': False,
+    'game_stats_tracker': StatsTracker()
 }
 
 class GoFishEnv(Env):
