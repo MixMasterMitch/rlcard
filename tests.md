@@ -6,7 +6,8 @@ Timelog:
 1/16, 1
 1/17, 3
 1/18, 2.5
-1/19, 4
+1/19, 6
+1/20, 1.5
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
@@ -48,13 +49,29 @@ Then I will try training the AI in a 4 player game. Since there are more inputs 
 # 2 Player, expected value evaluation
 Goal is to get average down to 0 and keep variance low
 Test Average Variance
-1:  -0.0075  0.2703
+0:   0.4039  0.3274
+1:   0.3922  0.3218
 2:   0.1445  0.2460
 3:   0.0413  0.2371
 4:   0.0143  0.2347
 
-1: Initial (basically using the info available to the previous AI)
-2: Initial + Accounts for not possible cards in probability of rank
-3: Initial + Accounts for not possible cards in probability of rank + Accounts for possibly drawing the desired card from the deck
-4: Initial + Accounts for not possible cards in probability of rank + Accounts for possibly drawing the desired card from the deck + Accounts for not possible cards into card weights
+0: Initial (basically using the info available to the previous AI)
+1: Adds tracking of not possible ranks (ranks that a card in a player's hand can't possibly be) and uses logic and process of elimination to reveal cards based on the additional information.
+2: Uses not possible ranks in probability of getting cards of the rank from a player
+3: Accounts for the possibly drawing the desired card from the deck if the requested player doesn't have a card of the rank
+4: Uses not possible ranks of a card to increase the probability for the remaining ranks on the card.
 
+I completed the code that basically determines the expected number of cards you would end up with of that rank if you asked for that rank of another player (e.g. if you have two 2’s and you know another player has at least another 2, then the expected number of 2’s you’d end up with by asking for 2’s might be 3.5; the sum of your existing two 2’s and their guaranteed 2 and the possibility that one of their other cards is also a 2). I came up with a good way to evaluate the accuracy of this “expected cards” calculation too. I have two random guessing agents play 5000 games. After each guess, I calculate the error between the “expected cards” I calculated for the guess and the number of cards they actually ended up with. Then I calculate the mean and variance of this and use that to evaluate the accuracy. The closer the mean and variance are to 0, the better. Theoretically the mean should be able to get pretty close to 0, but there will always be some variance since you can only have a finite number of cards and there is luck involved. As a baseline, I evaluated calculating “expected cards” without taking any information into account about what cards the player must not have (i.e. using the same information my AI models have trained on to-date). I got an average of 0.4039 and variance of 0.3274. This means that on average you will get 0.4 extra cards than what you knew you would for sure get. I started to layering in different improvements and taking advantage of all additional information and deducing all I could think of. Now I get an average of 0.0143 and variance of 0.2347. The average has basically come to 0 (yay!) and the variance has improved by 28% though. This improvement is best understood visually (the more clustered around the centerline the better):
+[Image of the two normal distributions]
+(Red is baseline, Green is improved)
+
+I created a new rule based AI that always guesses whichever rank has the highest “expected cards” value. As expected using this information improves the players performance against a random guesser with a huge 62% win rate (up from 58% with prior rule based AIs).
+
+So my next steps are:
+1. Profile and optimize the code. Games take longer to run now with all the extra calculations, so before training an AI on hundreds of thousands of games, I need to speed it up.
+2. Train a new AI
+3. Train a new AI vs 4 players
+4. On to Hearts!
+
+Basic Rule-base Model 2 = 0.2052 (60% win) vs random
+Basic Rule-base Model 3 = 0.2478 (62% win) vs random

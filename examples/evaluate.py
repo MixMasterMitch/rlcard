@@ -34,7 +34,7 @@ def evaluate(args):
     set_seed(args.seed)
 
     # Make the environment with seed
-    stats_tracker = StatsTracker()
+    stats_tracker = None # StatsTracker()
     env = rlcard.make(args.env, config={'seed': args.seed, 'game_stats_tracker': stats_tracker, 'game_debug': False})
 
     # Load models
@@ -47,7 +47,8 @@ def evaluate(args):
     rewards = tournament(env, args.num_games)
     for position, reward in enumerate(rewards):
         print(position, args.models[position], reward)
-    print(stats_tracker.finalize())
+    if stats_tracker:
+        print(stats_tracker.finalize())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Evaluation example in RLCard")

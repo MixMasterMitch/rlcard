@@ -5,12 +5,11 @@ from rlcard.envs import Env
 from rlcard.games.go_fish import Game
 from rlcard.games.go_fish.utils import cards_by_rank
 from rlcard.games.base import Card
-from rlcard.utils import StatsTracker
 
 DEFAULT_GAME_CONFIG = {
     'game_num_players': 2,
     'game_debug': False,
-    'game_stats_tracker': StatsTracker()
+    'game_stats_tracker': None
 }
 
 class GoFishEnv(Env):
@@ -32,14 +31,12 @@ class GoFishEnv(Env):
     def _extract_state(self, state):
         obs_list = []
         player_id = self.game.current_player_turn
-        rotated_counts = self.rotate_list(state['card_counts'], player_id)
-        obs_list.extend(rotated_counts)
-        rotated_book_counts = [len(books) for books in self.rotate_list(state['books'], player_id)]
-        obs_list.extend(rotated_book_counts)
-        rotated_known_hands = [self.known_hand_dict_to_list(known_hand) for known_hand in self.rotate_list(state['public_cards'], player_id)]
-        obs_list.extend([x for y in rotated_known_hands for x in y])
+        obs_list.extend(state['card_counts'])
+        obs_list.extend(state['books'])
+        known_hands = [self.rank_quantity_dict_to_list(known_hand) for known_hand in state['public_cards']]
+        obs_list.extend([x for y in known_hands for x in y])
         obs_list.append(state['deck_size'])
-        player_hand = self.rank_dict_to_list(cards_by_rank(state['player_hand']))
+        player_hand = self.rank_quantity_dict_to_list(state['current_player_hand_by_rank'])
         obs_list.extend(player_hand)
         obs = np.zeros((self.state_shape_num_elements), dtype=int)
         obs[0:] = obs_list
@@ -64,21 +61,9 @@ class GoFishEnv(Env):
         return OrderedDict(legal_ids)
 
     @staticmethod
-    def rotate_list(list_to_rotate, num_left):
-        return list_to_rotate[num_left:] + list_to_rotate[:num_left]
-
-    @staticmethod
-    def rank_dict_to_list(rank_dict):
+    def rank_quantity_dict_to_list(rank_dict):
         rank_list = []
         for rank in Card.valid_rank:
-            rank_list.append(len(rank_dict.get(rank, [])))
-        return rank_list
-
-    @staticmethod
-    def known_hand_dict_to_list(rank_dict):
-        rank_list = []
-        for rank in Card.valid_rank:
-            # print(rank_dict)
-            rank_list.append(len(rank_dict.get(rank, [])))
+            rank_list.append(rank_dict.get(rank, 0))
         return rank_list
 

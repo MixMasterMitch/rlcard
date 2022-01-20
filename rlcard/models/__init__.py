@@ -37,3 +37,7 @@ register(
 register(
     model_id = 'go-fish-v2',
     entry_point='rlcard.models.go_fish_rule_models:GoFishRuleModelV2')
+
+register(
+    model_id = 'go-fish-v3',
+    entry_point='rlcard.models.go_fish_rule_models:GoFishRuleModelV3')

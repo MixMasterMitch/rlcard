@@ -109,10 +109,11 @@ class GoFishGame:
                 self._print('<< Could not draw a card because there are none left')
                 next_players_turn = True
 
-        expected_quantity = self._players_rank_expected_values[target_players_to_left - 1][target_rank]
-        final_quantity = 4 if target_rank in player.books else len(set(filter(lambda c: c.rank == target_rank, player.hand)))
-        self._print('Expected {} {}s and ended with {}'.format(expected_quantity, target_rank, final_quantity))
-        self.stats_tracker.update(final_quantity - expected_quantity)
+        if self.stats_tracker:
+            expected_quantity = self._players_rank_expected_values[target_players_to_left - 1][target_rank]
+            final_quantity = 4 if target_rank in player.books else len(set(filter(lambda c: c.rank == target_rank, player.hand)))
+            self._print('Expected {} {}s and ended with {}'.format(expected_quantity, target_rank, final_quantity))
+            self.stats_tracker.update(final_quantity - expected_quantity)
 
         if next_players_turn:
             for candidate_next_player in self._get_other_players():
@@ -191,34 +192,35 @@ class GoFishGame:
 
         Returns:
             state (dict): corresponding player's state
-                'legal_actions',
-                'card_counts',
-                'public_cards',
-                'public_possible_cards_of_rank',
-                'public_not_possible_cards_of_rank',
-                'books',
-                'player_hand',
+                'legal_actions', string[]
+                'current_player_id', int - Id of the player whose turn it is currently
+                'card_counts', int[] - The number of cards in each player's hand
+                'public_cards', {rank -> quantity}[] - The publicly known quantity of cards of each rank in each player's hand
+                'public_possible_cards_of_rank', {rank -> quantity}[] - The publicly known quantity of cards for each rank in each player's hand where there must be at least one card of the rank. This known card is counted in public_cards too.
+                'public_not_possible_cards_of_rank', {rank -> quantity}[] - The publicly known quantity of cards that must not be of each rank in each player's hand 
+                'players_rank_expected_values', {rank -> expected_quantity}[] - The expected number of cards to end up with by guessing each rank of each player
+                'books', int[] - The number of completed books for each player
+                'player_hand', Card[] - All of the cards in the current player's hand
+                'current_player_hand_by_rank', {rank -> quantity} - The quantity of each rank in the current player's hand
                 'deck_size'
         '''
         state = {}
-        card_counts = []
-        _public_cards = []
-        public_possible_cards_of_rank = []
-        public_not_possible_cards_of_rank = []
-        books = []
-        for player in self.players:
-            card_counts.append(len(player.hand))
-            _public_cards.append(player.public_cards)
-            public_possible_cards_of_rank.append(player.public_possible_cards_of_rank)
-            public_not_possible_cards_of_rank.append(player.public_not_possible_cards_of_rank)
-            books.append(player.books)
 
         current_player = self._get_current_player()
         other_players = self._get_other_players()
+        rotated_players = self.players[current_player.player_id:] + self.players[:current_player.player_id]
 
-        # Public cards
+        card_counts = [] # int[]
         public_cards = [] # {rank -> quantity}[]
-        for player in self.players:
+        public_possible_cards_of_rank = [] # {rank -> quantity}[]
+        public_not_possible_cards_of_rank = [] # {rank -> quantity}[]
+        books = [] # int[]
+        for player in rotated_players:
+
+            # Card counts
+            card_counts.append(len(player.hand))
+
+            # Public cards
             player_public_cards = {}
             for rank, cards in player.public_cards.items():
                 player_public_cards[rank] = len(cards)
@@ -226,27 +228,45 @@ class GoFishGame:
                 player_public_cards[rank] = player_public_cards.get(rank, 0) + 1
             public_cards.append(player_public_cards)
 
-        # Current player's hand
+            # Public possible cards
+            player_public_possible_cards_of_rank = {}
+            for rank, cards in player.public_possible_cards_of_rank.items():
+                player_public_possible_cards_of_rank[rank] = len(cards)
+            public_possible_cards_of_rank.append(player_public_possible_cards_of_rank)
+            
+            # Public not possible cards
+            player_public_not_possible_cards_of_rank = {}
+            for rank, cards in player.public_not_possible_cards_of_rank.items():
+                player_public_not_possible_cards_of_rank[rank] = len(cards)
+            public_not_possible_cards_of_rank.append(player_public_not_possible_cards_of_rank)
+
+            # Books
+            books.append(len(player.books))
+
+        # Current player's hand by rank
         current_player_hand_by_rank = {} # rank -> quantity
         for card in current_player.hand:
             current_player_hand_by_rank[card.rank] = current_player_hand_by_rank.get(card.rank, 0) + 1
 
         # Unkown cards
+        # Determine the number of cards of each rank that are in an unknown location (e.g. still in the deck)
         unknown_cards = {} # rank -> quantity
         for remaining_rank in current_player.remaining_ranks:
             reamining_cards = 4
             if remaining_rank in current_player_hand_by_rank:
                 reamining_cards = reamining_cards - current_player_hand_by_rank[remaining_rank]
-            for other_player in other_players:
-                other_player_public_cards = public_cards[other_player.player_id]
+            for i, other_player in enumerate(other_players):
+                other_player_public_cards = public_cards[i + 1]
                 if remaining_rank in other_player_public_cards:
                     reamining_cards = reamining_cards - other_player_public_cards[remaining_rank]
             if reamining_cards > 0:
                 unknown_cards[remaining_rank] = reamining_cards
         total_unknown_cards = sum(unknown_cards.values())
 
+        # Card not possible ranks
+        # For each card in the other players' hands, determine the set of ranks the card can't be.
         card_not_possible_ranks = {} # card -> {rank}
-        for other_player in self._get_other_players():
+        for other_player in other_players:
             for rank, card_set in other_player.public_not_possible_cards_of_rank.items():
                 for card in card_set:
                     not_possible_ranks = card_not_possible_ranks.get(card, set())
@@ -268,6 +288,7 @@ class GoFishGame:
                     card_weights[card] = card_weights[card] * weight_factor
 
         # Player rank points
+        # For each other player, determine the cards that can be of each rank. Then sum the weights of those cards for each rank to determine the rank points
         players_rank_points = [] # {rank -> points}[]
         for other_player in other_players:
             player_non_public_cards = other_player.get_non_public_cards_in_hand()
@@ -282,6 +303,7 @@ class GoFishGame:
             players_rank_points.append(player_rank_points)
 
         # Total rank points
+        # Determine the total number of points in the game (i.e. in the deck and with the other players) for each rank
         deck_size = len(self.dealer.deck)
         total_rank_points = {} # {rank -> points}
         for remaining_rank in unknown_cards.keys():
@@ -296,29 +318,32 @@ class GoFishGame:
             deck_top_card_expected_value[rank] = unknown_cards[rank] / total_points
 
         # Player rank expected values
-        # TODO incorporate deck expected values
         players_rank_expected_values = [] # {rank -> expected_value}[]
         for i, other_player in enumerate(other_players):
-            player_rank_points = players_rank_points[i]
             player_rank_expected_values = {} # {rank -> expected_value}
-            for rank in current_player.remaining_ranks:
-                expected_value_from_players_known_cards = public_cards[other_player.player_id].get(rank, 0)
-                expected_value_from_players_unknown_cards = player_rank_points.get(rank, 0) * unknown_cards.get(rank, 0) / total_rank_points.get(rank, 1) # If total_rank_points is 0, then player_rank_points will also be 0. But we don't want a divide by 0, so we default total to 1.
+            for rank in current_player_hand_by_rank.keys():
+                # TODO handle special case where all cards are known, but from different players. Expected value should just be 4
+                expected_value_from_players_known_cards = public_cards[i + 1].get(rank, 0)
+                expected_value_from_players_unknown_cards = players_rank_points[i].get(rank, 0) * unknown_cards.get(rank, 0) / total_rank_points.get(rank, 1) # If total_rank_points is 0, then player_rank_points will also be 0. But we don't want a divide by 0, so we default total to 1.
                 expected_value_from_drawing_from_deck = 0 if expected_value_from_players_known_cards > 0 else deck_top_card_expected_value.get(rank, 0) # TODO: I think this value should decrease based on the probability that one of the unknown cards is the desired rank.
                 expected_value_from_current_players_hand = current_player_hand_by_rank.get(rank, 0)
                 player_rank_expected_values[rank] = expected_value_from_players_known_cards + expected_value_from_players_unknown_cards + expected_value_from_drawing_from_deck + expected_value_from_current_players_hand
             players_rank_expected_values.append(player_rank_expected_values)
         self._print(players_rank_expected_values)
-        self._players_rank_expected_values = players_rank_expected_values
 
+        if self.stats_tracker:
+            self._players_rank_expected_values = players_rank_expected_values
 
         state['legal_actions'] = self._get_legal_actions(player_id)
+        state['current_player_id'] = player_id
         state['card_counts'] = card_counts
-        state['public_cards'] = _public_cards
+        state['public_cards'] = public_cards
         state['public_possible_cards_of_rank'] = public_possible_cards_of_rank
         state['public_not_possible_cards_of_rank'] = public_not_possible_cards_of_rank
+        state['players_rank_expected_values'] = players_rank_expected_values
         state['books'] = books
-        state['player_hand'] = self.players[player_id].hand
+        state['player_hand'] = current_player.hand
+        state['current_player_hand_by_rank'] = current_player_hand_by_rank
         state['deck_size'] = deck_size
 
         return state
