@@ -43,7 +43,7 @@ class HumanAgent(object):
                     num_public_cards = num_public_cards + num_cards
             else:
                 print('\tNone')
-            
+
             public_possible_cards_of_rank = raw_state['public_possible_cards_of_rank'][i]
             print('Public possible cards of rank:')
             if len(public_possible_cards_of_rank) > 0:
@@ -52,7 +52,7 @@ class HumanAgent(object):
                     num_public_cards = num_public_cards - 1
             else:
                 print('\tNone')
-            
+
             public_not_possible_cards_of_rank = raw_state['public_not_possible_cards_of_rank'][i]
             print('Public possible cards of rank:')
             if len(public_not_possible_cards_of_rank) > 0:
@@ -62,7 +62,8 @@ class HumanAgent(object):
                 print('\tNone')
 
             if i == 0:
-                print_card(raw_state['player_hand'])
+                hand_list = sorted(list(raw_state['player_hand']), key=lambda card: '{:02d}{}'.format(Card.valid_rank.index(card.rank), card.suit))
+                print_card(hand_list)
             else:
                 print_card([None] * raw_state['card_counts'][i])
 

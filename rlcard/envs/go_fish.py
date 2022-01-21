@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 from rlcard.envs import Env
 from rlcard.games.go_fish import Game
-from rlcard.games.go_fish.utils import cards_by_rank
 from rlcard.games.base import Card
 
 DEFAULT_GAME_CONFIG = {
     'game_num_players': 2,
     'game_debug': False,
-    'game_stats_tracker': None
+    'game_stats_tracker': None,
+    'game_is_training_mode': False,
 }
 
 class GoFishEnv(Env):
@@ -21,10 +21,12 @@ class GoFishEnv(Env):
         super().__init__(config)
         # 1 * num_players = card counts of all players
         # 1 * num_players = scored books of all players
-        # 13 * num_players = public quantities of every card for each player
+        # 13 * (num_players - 1) = expected quantities for a request of every rank for each other player
         # 1 = remaining cards in deck
-        # 13 = current player hand
-        self.state_shape_num_elements = 14 + 15 * self.num_players
+        # 13 = quantity of each rank in current player hand
+        # 13 = public quantities of every rank in current player hand
+        # 13 = percentage of non public cards that can't be of each rank
+        self.state_shape_num_elements = 1 + 3 * 13 + 2 * self.num_players + 13 * (self.num_players - 1)
         self.state_shape = [[self.state_shape_num_elements] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
@@ -33,11 +35,27 @@ class GoFishEnv(Env):
         player_id = self.game.current_player_turn
         obs_list.extend(state['card_counts'])
         obs_list.extend(state['books'])
-        known_hands = [self.rank_quantity_dict_to_list(known_hand) for known_hand in state['public_cards']]
-        obs_list.extend([x for y in known_hands for x in y])
+        expected_values = [self.rank_quantity_dict_to_list(player_expected_values) for player_expected_values in state['players_rank_expected_values']]
+        obs_list.extend([x for y in expected_values for x in y])
         obs_list.append(state['deck_size'])
-        player_hand = self.rank_quantity_dict_to_list(state['current_player_hand_by_rank'])
+        player_hand = self.rank_quantity_dict_to_list(state['player_hand_by_rank'])
         obs_list.extend(player_hand)
+        player_public_hand = self.rank_quantity_dict_to_list(state['public_cards'][0])
+        obs_list.extend(player_public_hand)
+
+        public_not_revealed_count = state['card_counts'][0] - sum(player_public_hand) + len(state['public_possible_cards_of_rank'][0])
+        player_public_not_possible_percentage = []
+        not_possible = state['public_not_possible_cards_of_rank'][0]
+        for rank in Card.valid_rank:
+            if rank not in state['remaining_ranks'] or public_not_revealed_count == 0:
+                percentage = 1
+            elif rank not in not_possible:
+                percentage = 0
+            else:
+                percentage = not_possible[rank] / public_not_revealed_count
+            player_public_not_possible_percentage.append(percentage)
+        obs_list.extend(player_public_not_possible_percentage)
+
         obs = np.zeros((self.state_shape_num_elements), dtype=int)
         obs[0:] = obs_list
 
@@ -66,4 +84,3 @@ class GoFishEnv(Env):
         for rank in Card.valid_rank:
             rank_list.append(rank_dict.get(rank, 0))
         return rank_list
-

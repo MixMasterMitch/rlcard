@@ -22,6 +22,7 @@ class Card:
         '''
         self.suit = suit
         self.rank = rank
+        self._hash = Card.valid_rank.index(self.rank) + 100 * Card.valid_suit.index(self.suit)
 
     def __eq__(self, other):
         if isinstance(other, Card):
@@ -31,9 +32,7 @@ class Card:
             return NotImplemented
 
     def __hash__(self):
-        suit_index = Card.valid_suit.index(self.suit)
-        rank_index = Card.valid_rank.index(self.rank)
-        return rank_index + 100 * suit_index
+        return self._hash
 
     def __str__(self):
         ''' Get string representation of a card.

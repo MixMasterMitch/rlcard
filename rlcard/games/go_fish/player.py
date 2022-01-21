@@ -1,4 +1,3 @@
-from rlcard.games.go_fish.utils import cards_by_rank
 from rlcard.games.base import Card
 import itertools
 
@@ -12,7 +11,9 @@ class GoFishPlayer:
         '''
         self.np_random = np_random
         self.player_id = player_id
-        self.hand = [] # card[]
+        self.hand = set() # {card}
+        self.hand_by_rank = {} # rank -> quantity
+        self.non_public_cards_in_hand = set() # {card}
         self.public_cards = {} # rank -> {card}
         self.public_possible_cards_of_rank = {} # rank -> {card}
         self.public_not_possible_cards_of_rank = {} # rank -> {card}
@@ -29,26 +30,27 @@ class GoFishPlayer:
         ''' Return ranks of any completed books
         '''
         for card in cards:
-            self._print('Adding {} to hand of player {}'.format(card, self.player_id))
-            self.hand.append(card)
+            self._print('Adding {} to hand of player {}', card, self.player_id)
+            self._add_card_to_hand(card)
             if public:
                 self.reveal_card(card)
 
         # Extract books from hand
         completed_books = set()
-        hand_by_rank = cards_by_rank(self.hand)
-        for rank, cards_of_rank in hand_by_rank.items():
-            if (len(cards_of_rank) == 4):
-                self._print('<< Player {} completed a book of {}s'.format(self.player_id, rank))
-                self._print('Adding {} to books of player {}'.format(rank, self.player_id))
+        for rank, cards_of_rank in self.hand_by_rank.items():
+            if (cards_of_rank == 4):
+                self._print('<< Player {} completed a book of {}s', self.player_id, rank)
+                self._print('Adding {} to books of player {}', rank, self.player_id)
                 self.books.add(rank)
                 completed_books.add(rank)
                 self.mark_book_completed(rank)
 
-        # Sort cards
-        self.hand = sorted(self.hand, key=lambda card: '{}{}'.format(card.rank, card.suit))
-
         return completed_books
+
+    def _add_card_to_hand(self, card):
+        self.hand.add(card)
+        self.non_public_cards_in_hand.add(card)
+        self.hand_by_rank[card.rank] = self.hand_by_rank.get(card.rank, 0) + 1
 
     def remove_cards_of_rank(self, rank):
         ''' Return cards of the given rank removed from the player's hand
@@ -57,9 +59,9 @@ class GoFishPlayer:
 
         # Mark all remaining cards as not being of the requested rank
         if rank in self.public_not_possible_cards_of_rank:
-            self._print('Removing {} public not possible cards of rank {} for player {}'.format(len(self.public_not_possible_cards_of_rank[rank]), rank, self.player_id))
-        non_public_cards_in_hand = self.get_non_public_cards_in_hand()
-        self._print('Marking {} as not of rank {} for player {}'.format(non_public_cards_in_hand, rank, self.player_id))
+            self._print('Removing {} public not possible cards of rank {} for player {}', len(self.public_not_possible_cards_of_rank[rank]), rank, self.player_id)
+        non_public_cards_in_hand = set(self.non_public_cards_in_hand)
+        self._print('Marking {} as not of rank {} for player {}', non_public_cards_in_hand, rank, self.player_id)
         self.public_not_possible_cards_of_rank[rank] = non_public_cards_in_hand
         for card in non_public_cards_in_hand:
             if card.rank == rank:
@@ -68,6 +70,17 @@ class GoFishPlayer:
         self._reveal_cards_by_process_of_elimination()
 
         return removed_cards
+
+    def _remove_card_from_hand(self, card):
+        self.hand.remove(card)
+        if card in self.non_public_cards_in_hand:
+            self.non_public_cards_in_hand.remove(card)
+        if card.rank in self.hand_by_rank:
+            quantity = self.hand_by_rank[card.rank]
+            if quantity == 0:
+                del self.hand_by_rank[card.rank]
+            else:
+                self.hand_by_rank[card.rank] = quantity - 1
 
     def mark_rank_as_requested(self, rank):
         ''' Specifically, this player has requested the given rank of another player.
@@ -78,21 +91,14 @@ class GoFishPlayer:
 
         # Otherwise, all cards that are not public should be marked as being of the given rank
         # But exclude cards that are already known to not be of the given rank
-        non_public_cards_in_hand = self.get_non_public_cards_in_hand()
+        non_public_cards_in_hand = set(self.non_public_cards_in_hand)
         if rank in self.public_not_possible_cards_of_rank:
             for not_possible_card in self.public_not_possible_cards_of_rank[rank]:
                 non_public_cards_in_hand.remove(not_possible_card)
-        self._print('Marking {} as containing at least one card of rank {} for player {}'.format(non_public_cards_in_hand, rank, self.player_id))
+        self._print('Marking {} as containing at least one card of rank {} for player {}', non_public_cards_in_hand, rank, self.player_id)
         self.public_possible_cards_of_rank[rank] = non_public_cards_in_hand
 
         self._reveal_cards_by_process_of_elimination()
-
-    def get_non_public_cards_in_hand(self):
-        non_public_cards_in_hand = set(self.hand)
-        for public_cards_of_rank in self.public_cards.values():
-            for card in public_cards_of_rank:
-                non_public_cards_in_hand.remove(card)
-        return non_public_cards_in_hand
 
     def reveal_card(self, card):
         self._reveal_card(card)
@@ -101,8 +107,11 @@ class GoFishPlayer:
     def _reveal_card(self, card):
         rank = card.rank
 
+        # Remove from non-public cards
+        self.non_public_cards_in_hand.remove(card)
+
         # Add card to public cards
-        self._print('Adding {} to public cards of rank {} for player {}'.format(card, rank, self.player_id))
+        self._print('Adding {} to public cards of rank {} for player {}', card, rank, self.player_id)
         public_cards_of_rank = self.public_cards.get(rank, set())
         public_cards_of_rank.add(card)
         self.public_cards[rank] = public_cards_of_rank
@@ -110,7 +119,7 @@ class GoFishPlayer:
         # If the card was in a set of possible cards for the rank, remove the set
         if rank in self.public_possible_cards_of_rank:
             if card in self.public_possible_cards_of_rank[rank]:
-                self._print('Removing {} public possible cards of rank {} for player {}'.format(len(self.public_possible_cards_of_rank[rank]), rank, self.player_id))
+                self._print('Removing {} public possible cards of rank {} for player {}', len(self.public_possible_cards_of_rank[rank]), rank, self.player_id)
                 del self.public_possible_cards_of_rank[rank]
 
         # Clean up the card from the public possible and public not possible data
@@ -128,18 +137,18 @@ class GoFishPlayer:
         removed_cards = set()
 
         if rank in self.public_cards:
-            self._print('Removing {} public cards of rank {} for player {}'.format(len(self.public_cards[rank]), rank, self.player_id))
+            self._print('Removing {} public cards of rank {} for player {}', len(self.public_cards[rank]), rank, self.player_id)
             del self.public_cards[rank]
         if rank in self.public_possible_cards_of_rank:
-            self._print('Removing {} public possible cards of rank {} for player {}'.format(len(self.public_possible_cards_of_rank[rank]), rank, self.player_id))
+            self._print('Removing {} public possible cards of rank {} for player {}', len(self.public_possible_cards_of_rank[rank]), rank, self.player_id)
             del self.public_possible_cards_of_rank[rank]
         if rank in self.public_not_possible_cards_of_rank:
-            self._print('Removing {} public not possible cards of rank {} for player {}'.format(len(self.public_not_possible_cards_of_rank[rank]), rank, self.player_id))
+            self._print('Removing {} public not possible cards of rank {} for player {}', len(self.public_not_possible_cards_of_rank[rank]), rank, self.player_id)
             del self.public_not_possible_cards_of_rank[rank]
         for card in list(self.hand):
             if card.rank == rank:
-                self._print('Removing {} from the hand of player {}'.format(card, self.player_id))
-                self.hand.remove(card)
+                self._print('Removing {} from the hand of player {}', card, self.player_id)
+                self._remove_card_from_hand(card)
                 removed_cards.add(card)
 
         # Remove other records of the removed cards
@@ -153,8 +162,8 @@ class GoFishPlayer:
             cards_to_reveal = set()
 
             # Look if there are any cards that can only be one possible rank based on what it can't be
-            for card in self.get_non_public_cards_in_hand():
-                possible_ranks = set(self.remaining_ranks)
+            for card in self.non_public_cards_in_hand:
+                possible_ranks = set(self.remaining_ranks) # TODO: Ideally any ranks with all 4 cards fully accounted for should be excluded from this list, but that requires more information from other players
                 for rank, not_possible_cards in self.public_not_possible_cards_of_rank.items():
                     if card in not_possible_cards:
                         possible_ranks.remove(rank)
@@ -179,14 +188,14 @@ class GoFishPlayer:
                             matching_combination = False
                             break
                     if matching_combination:
-                        # print('Discovered {} matching card sets. Revealing {} for player {}'.format(length, combination[0], self.player_id))
+                        # print('Discovered {} matching card sets. Revealing {} for player {}', length, combination[0], self.player_id))
                         cards_to_reveal.update(combination[0])
 
             # It is possible that the same card is marked to be revealed multiple times. So make sure the card still needs to be revealed
             for card_to_reveal in cards_to_reveal:
                 rank = card_to_reveal.rank
                 if rank not in self.public_cards or card_to_reveal not in self.public_cards[rank]:
-                    self._print('By process of elimination, revealing {} for player {}'.format(card_to_reveal, self.player_id))
+                    self._print('By process of elimination, revealing {} for player {}', card_to_reveal, self.player_id)
                     self._reveal_card(card_to_reveal)
 
             # Keep iterating until there are no more cards to reveal
@@ -201,19 +210,19 @@ class GoFishPlayer:
         additional_cards_to_reveal = set()
         for rank, possible_cards in dict(self.public_possible_cards_of_rank).items():
             if card in possible_cards:
-                self._print('Removing {} from public possible cards of rank {} for player {}'.format(card, rank, self.player_id))
+                self._print('Removing {} from public possible cards of rank {} for player {}', card, rank, self.player_id)
                 self.public_possible_cards_of_rank[rank].remove(card)
             if len(possible_cards) == 1:
                 last_possible_card, = possible_cards
-                self._print('Removing {} from public possible cards of rank {} for player {} and marking it to be revealed'.format(last_possible_card, rank, self.player_id))
+                self._print('Removing {} from public possible cards of rank {} for player {} and marking it to be revealed', last_possible_card, rank, self.player_id)
                 del self.public_possible_cards_of_rank[rank]
                 additional_cards_to_reveal.add(last_possible_card)
         for rank, not_possible_cards in dict(self.public_not_possible_cards_of_rank).items():
             if card in not_possible_cards:
-                self._print('Removing {} from public not possible cards of rank {} for player {}'.format(card, rank, self.player_id))
+                self._print('Removing {} from public not possible cards of rank {} for player {}', card, rank, self.player_id)
                 self.public_not_possible_cards_of_rank[rank].remove(card)
             if len(not_possible_cards) == 0:
-                self._print('Clearning empty public not possible cards of rank {} for player {}'.format(rank, self.player_id))
+                self._print('Clearning empty public not possible cards of rank {} for player {}', rank, self.player_id)
                 del self.public_not_possible_cards_of_rank[rank]
         # Additional cards to reveal should not be revealed until the end to avoid nested manipulating of the public and non public sets while iterating through them.
         for additional_card_to_reveal in additional_cards_to_reveal:
@@ -222,8 +231,6 @@ class GoFishPlayer:
             if rank not in self.public_cards or additional_card_to_reveal not in self.public_cards[rank]:
                 self.reveal_card(additional_card_to_reveal)
 
-    def _print(self, message):
+    def _print(self, message, *args):
         if self.debug:
-            print(message)
-
-
+            print(message.format(*args))

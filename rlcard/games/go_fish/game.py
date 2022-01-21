@@ -18,8 +18,11 @@ class GoFishGame:
         self.num_players = game_config['game_num_players']
         self.debug = game_config['game_debug']
         self.stats_tracker = game_config['game_stats_tracker']
+        self.is_training_mode = game_config['game_is_training_mode']
         self.action_list = []
         self.action_space = {}
+        self._legal_actions = []
+        self._legal_actions_dirty = True
         for player_num in range(self.num_players - 1):
             for rank in Card.valid_rank:
                 action = '{}-{}'.format(player_num + 1, rank)
@@ -33,6 +36,8 @@ class GoFishGame:
             state (dict): the first state of the game
             player_id (int): current player's id
         '''
+        self._legal_actions_dirty = True
+
         # Setup players
         self.players = []
         for i in range(self.num_players):
@@ -62,11 +67,13 @@ class GoFishGame:
             dict: next player's state
             int: next plater's id
         '''
+        self._legal_actions_dirty = True
+
         player = self._get_current_player()
         target_players_to_left = int(action[0])
         target_player = self.players[(self.current_player_turn + target_players_to_left) % self.num_players]
         target_rank = action[2]
-        self._print('>> Player {} requested {}s from player {}'.format(player.player_id, target_rank, target_player.player_id))
+        self._print('>> Player {} requested {}s from player {}', player.player_id, target_rank, target_player.player_id)
         next_players_turn = True
 
         player.mark_rank_as_requested(target_rank)
@@ -76,7 +83,7 @@ class GoFishGame:
 
         # got what the player was looking for
         if len(netted_cards) > 0:
-            self._print('<< Got {} cards'.format(len(netted_cards)))
+            self._print('<< Got {} cards', len(netted_cards))
             next_players_turn = False
 
         # go fish (if there are cards left)
@@ -94,7 +101,7 @@ class GoFishGame:
                     if fished_card in player.hand: # It is possible that the fished card created a completed book and is implicitly revealed
                         player.reveal_card(fished_card)
 
-                # If a book was completed using the drawn card, cleanup the rank data for the other players       
+                # If a book was completed using the drawn card, cleanup the rank data for the other players
                 self._report_completed_books_to_other_players(completed_books)
             else:
                 self._print('<< Could not draw a card because there are none left')
@@ -112,14 +119,14 @@ class GoFishGame:
         if self.stats_tracker:
             expected_quantity = self._players_rank_expected_values[target_players_to_left - 1][target_rank]
             final_quantity = 4 if target_rank in player.books else len(set(filter(lambda c: c.rank == target_rank, player.hand)))
-            self._print('Expected {} {}s and ended with {}'.format(expected_quantity, target_rank, final_quantity))
+            self._print('Expected {} {}s and ended with {}', expected_quantity, target_rank, final_quantity)
             self.stats_tracker.update(final_quantity - expected_quantity)
 
         if next_players_turn:
             for candidate_next_player in self._get_other_players():
                 self._print('-- Next player turn')
                 if len(candidate_next_player.hand) == 0:
-                    self._print('>> Player {} has no cards'.format(candidate_next_player.player_id))
+                    self._print('>> Player {} has no cards', candidate_next_player.player_id)
                 else:
                     self.current_player_turn = candidate_next_player.player_id
                     break
@@ -174,6 +181,9 @@ class GoFishGame:
         Returns:
             (list): A list of legal actions
         '''
+        if not self._legal_actions_dirty:
+            return self._legal_actions
+
         player_hand = self.players[player_id].hand
         player_hand_ranks = set()
         for card in player_hand:
@@ -182,6 +192,8 @@ class GoFishGame:
         for i in range(self.num_players - 1):
             for player_hand_rank in player_hand_ranks:
                 actions.append('{}-{}'.format(i + 1, player_hand_rank))
+        self._legal_actions = actions
+        self._legal_actions_dirty = False
         return actions
 
     def get_state(self, player_id):
@@ -197,11 +209,12 @@ class GoFishGame:
                 'card_counts', int[] - The number of cards in each player's hand
                 'public_cards', {rank -> quantity}[] - The publicly known quantity of cards of each rank in each player's hand
                 'public_possible_cards_of_rank', {rank -> quantity}[] - The publicly known quantity of cards for each rank in each player's hand where there must be at least one card of the rank. This known card is counted in public_cards too.
-                'public_not_possible_cards_of_rank', {rank -> quantity}[] - The publicly known quantity of cards that must not be of each rank in each player's hand 
+                'public_not_possible_cards_of_rank', {rank -> quantity}[] - The publicly known quantity of cards that must not be of each rank in each player's hand
                 'players_rank_expected_values', {rank -> expected_quantity}[] - The expected number of cards to end up with by guessing each rank of each player
                 'books', int[] - The number of completed books for each player
-                'player_hand', Card[] - All of the cards in the current player's hand
-                'current_player_hand_by_rank', {rank -> quantity} - The quantity of each rank in the current player's hand
+                'remaining_ranks' = rank[] - The ranks that have not be converted to completed books yet.
+                'player_hand', {Card} - All of the cards in the current player's hand
+                'player_hand_by_rank', {rank -> quantity} - The quantity of each rank in the current player's hand
                 'deck_size'
         '''
         state = {}
@@ -233,7 +246,7 @@ class GoFishGame:
             for rank, cards in player.public_possible_cards_of_rank.items():
                 player_public_possible_cards_of_rank[rank] = len(cards)
             public_possible_cards_of_rank.append(player_public_possible_cards_of_rank)
-            
+
             # Public not possible cards
             player_public_not_possible_cards_of_rank = {}
             for rank, cards in player.public_not_possible_cards_of_rank.items():
@@ -243,18 +256,13 @@ class GoFishGame:
             # Books
             books.append(len(player.books))
 
-        # Current player's hand by rank
-        current_player_hand_by_rank = {} # rank -> quantity
-        for card in current_player.hand:
-            current_player_hand_by_rank[card.rank] = current_player_hand_by_rank.get(card.rank, 0) + 1
-
         # Unkown cards
         # Determine the number of cards of each rank that are in an unknown location (e.g. still in the deck)
         unknown_cards = {} # rank -> quantity
         for remaining_rank in current_player.remaining_ranks:
             reamining_cards = 4
-            if remaining_rank in current_player_hand_by_rank:
-                reamining_cards = reamining_cards - current_player_hand_by_rank[remaining_rank]
+            if remaining_rank in current_player.hand_by_rank:
+                reamining_cards = reamining_cards - current_player.hand_by_rank[remaining_rank]
             for i, other_player in enumerate(other_players):
                 other_player_public_cards = public_cards[i + 1]
                 if remaining_rank in other_player_public_cards:
@@ -274,7 +282,7 @@ class GoFishGame:
                     card_not_possible_ranks[card] = not_possible_ranks
 
 
-        # Determine the weight on probabilities associated with each card. If a card is known to be one of n cards that are of a particular rank, 
+        # Determine the weight on probabilities associated with each card. If a card is known to be one of n cards that are of a particular rank,
         # then the probability of the card being of a different rank is reduced. The probability is increased for each rank the card can't be.
         card_weights = {} # card -> weight
         for other_player in other_players:
@@ -291,7 +299,7 @@ class GoFishGame:
         # For each other player, determine the cards that can be of each rank. Then sum the weights of those cards for each rank to determine the rank points
         players_rank_points = [] # {rank -> points}[]
         for other_player in other_players:
-            player_non_public_cards = other_player.get_non_public_cards_in_hand()
+            player_non_public_cards = other_player.non_public_cards_in_hand
             player_rank_points = {} # {rank -> points}
             for remaining_rank in unknown_cards.keys():
                 candidate_cards = player_non_public_cards - other_player.public_not_possible_cards_of_rank.get(remaining_rank, set())
@@ -321,15 +329,14 @@ class GoFishGame:
         players_rank_expected_values = [] # {rank -> expected_value}[]
         for i, other_player in enumerate(other_players):
             player_rank_expected_values = {} # {rank -> expected_value}
-            for rank in current_player_hand_by_rank.keys():
+            for rank in current_player.hand_by_rank.keys():
                 # TODO handle special case where all cards are known, but from different players. Expected value should just be 4
                 expected_value_from_players_known_cards = public_cards[i + 1].get(rank, 0)
                 expected_value_from_players_unknown_cards = players_rank_points[i].get(rank, 0) * unknown_cards.get(rank, 0) / total_rank_points.get(rank, 1) # If total_rank_points is 0, then player_rank_points will also be 0. But we don't want a divide by 0, so we default total to 1.
                 expected_value_from_drawing_from_deck = 0 if expected_value_from_players_known_cards > 0 else deck_top_card_expected_value.get(rank, 0) # TODO: I think this value should decrease based on the probability that one of the unknown cards is the desired rank.
-                expected_value_from_current_players_hand = current_player_hand_by_rank.get(rank, 0)
+                expected_value_from_current_players_hand = current_player.hand_by_rank.get(rank, 0)
                 player_rank_expected_values[rank] = expected_value_from_players_known_cards + expected_value_from_players_unknown_cards + expected_value_from_drawing_from_deck + expected_value_from_current_players_hand
             players_rank_expected_values.append(player_rank_expected_values)
-        self._print(players_rank_expected_values)
 
         if self.stats_tracker:
             self._players_rank_expected_values = players_rank_expected_values
@@ -342,18 +349,20 @@ class GoFishGame:
         state['public_not_possible_cards_of_rank'] = public_not_possible_cards_of_rank
         state['players_rank_expected_values'] = players_rank_expected_values
         state['books'] = books
+        state['remaining_ranks'] = current_player.remaining_ranks
         state['player_hand'] = current_player.hand
-        state['current_player_hand_by_rank'] = current_player_hand_by_rank
+        state['player_hand_by_rank'] = current_player.hand_by_rank
         state['deck_size'] = deck_size
 
         return state
 
     def get_payoffs(self):
-        # payoffs = []
-        # for player in self.players:
-        #     payoffs.append(len(player.books) - 6.5)
+        if self.is_training_mode:
+            payoffs = []
+            for player in self.players:
+                payoffs.append(len(player.books) - 6.5)
 
-        # return payoffs
+            return payoffs
 
         top_score = 0
         players_with_top_score = 0
@@ -378,12 +387,9 @@ class GoFishGame:
         Returns:
             status (bool): True/False
         '''
-        for i in range(self.num_players):
-            if len(self.players[i].hand) > 0:
-                return False
+        return len(self.players[0].remaining_ranks) == 0
 
-        return True
-
-    def _print(self, message):
+    def _print(self, message, *args):
         if self.debug:
-            print(message)
+            print(message.format(*args))
+
