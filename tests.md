@@ -9,7 +9,10 @@ Date, Hours
 1/18, 2.5
 1/19, 6
 1/20, 3
-1/21, 1
+1/21, 2
+1/22, 2
+1/23, 1
+Total: 35.5
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
@@ -87,3 +90,29 @@ Executing 2-player, random vs random, 1000 games
 4:  6.18 - Don't sort player hands
 5:  5.87 - Store player hand by rank instead of recomputing
 Times are in ms per game. Achieved 43% improvement.
+
+# 2 Player, model training with expected value data
+Base settings:
+* Discount Factor: 0.999
+* Batch Size: 64
+* Learning Rate: 0.000005
+
+| Test | Network   | Episodes | Epsilon Decay | vs Random | vs Rules v3 | Opponent Pool                       | Info |
+----------------------------------------------------------------------------------------------------------------------------
+| 1    | [64]      |    50000 |         20000 |     0.167 |      -0.072 | Random                              | Baseline
+| 2    | [64]      |    50000 |         20000 |     0.186 |      -0.057 | Random, RulesV1, RulesV3, TrainedV1 | Added opponent pool
+| 3    | [128, 64] |   100000 |        500000 |     0.162 |      -0.066 | Random, RulesV1, RulesV3, TrainedV2 |
+| 4    | [128]     |   100000 |        500000 |     0.177 |      -0.054 | Random, RulesV1, RulesV3, TrainedV2 |
+| 5    | [64, 64]  |   100000 |        500000 |     0.177 |      -0.046 | Random, RulesV1, RulesV3, TrainedV2 |
+| 6    | [64, 32]  |   100000 |        500000 |     0.165 |      -0.070 | Random, RulesV1, RulesV3, TrainedV2 |
+| 7    | [64]      |   100000 |        500000 |     0.195 |      -0.024 | Random, RulesV1, RulesV3, TrainedV2 |
+^Best (60% vs Random, 49% vs Rules v3)
+| 8    | [64]      |   250000 |        500000 |     0.194 |      -0.050 | Random, RulesV1, RulesV3, TrainedV7 |
+| 9    | [64]      |   250000 |       1000000 |     0.182 |      -0.063 | Random, RulesV1, RulesV3, TrainedV7 |
+| 10   | [64]      |   250000 |        500000 |     0.182 |      -0.067 | Random, RulesV1, RulesV3, TrainedV7 | 0.0000005 Learning Rate
+| 11   | [64]      |   250000 |        500000 |     0.191 |      -0.043 | Random, RulesV1, RulesV3, TrainedV7 | 0.9995 Discount factor
+| 12   | [64]      |   250000 |        500000 |     0.191 |      -0.047 | RulesV3                             |
+| 13   | [64]      |   100000 |        500000 |    -0.286 |      -0.484 | Random, RulesV1, RulesV3, TrainedV2 | Normalized inputs
+| 14   | [64]      |   100000 |        500000 |     0.182 |      -0.056 | Random, RulesV1, RulesV3, TrainedV2 | Squared rewards
+
+Whelp, I am a bit discouraged now. My best trained model is not as good as the Rule V3 model. My trained model has a 60% win rate vs a random opponent wheras the Rule V3 model has a 62% win rate. My trained model has a 49% win rate vs the Rule V3 model. This means my trained AI has not been able to find any suprior strategy and can't quite mimic the very basic strategy of Rule V3 model (which is to simply pick the action with the highest expected number of cards value from the game state). I have tried a range of different changes and tunings and can't think of anything else to try. So I am going to put this project on pause for now and come back to it after Mexico.

@@ -26,7 +26,7 @@ def get_device():
         device = torch.device("cpu")
         print("--> Running on the CPU")
 
-    return device    
+    return device
 
 def init_standard_deck():
     ''' Initialize a standard deck of 52 cards
@@ -207,6 +207,28 @@ def tournament(env, num):
     payoffs = [0 for _ in range(env.num_players)]
     counter = 0
     while counter < num:
+        _, _payoffs = env.run(is_training=False)
+        if isinstance(_payoffs, list):
+            for _p in _payoffs:
+                for i, _ in enumerate(payoffs):
+                    payoffs[i] += _p[i]
+                counter += 1
+        else:
+            for i, _ in enumerate(payoffs):
+                payoffs[i] += _payoffs[i]
+            counter += 1
+    for i, _ in enumerate(payoffs):
+        payoffs[i] /= counter
+    return payoffs
+
+def tournament_random_opponents(env, num, primary_agent, opponent_agents):
+    payoffs = [0 for _ in range(env.num_players)]
+    counter = 0
+    while counter < num:
+        agents = [primary_agent]
+        selected_opponent_agents = np.random.choice(opponent_agents, env.num_players - 1)
+        agents.extend(selected_opponent_agents)
+        env.set_agents(agents)
         _, _payoffs = env.run(is_training=False)
         if isinstance(_payoffs, list):
             for _p in _payoffs:

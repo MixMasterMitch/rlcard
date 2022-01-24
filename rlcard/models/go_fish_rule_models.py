@@ -5,7 +5,6 @@ import numpy as np
 
 import rlcard
 from rlcard.models.model import Model
-from rlcard.games.go_fish.utils import cards_by_rank
 from collections import OrderedDict
 
 class GoFishRuleAgentV1(object):
@@ -16,7 +15,7 @@ class GoFishRuleAgentV1(object):
         self.use_raw = True
 
     def step(self, state):
-        ''' 
+        '''
         Args:
             state (dict): Raw state from the game
 
@@ -85,7 +84,7 @@ class GoFishRuleAgentV2(object):
         self.use_raw = True
 
     def step(self, state):
-        ''' 
+        '''
         Args:
             state (dict): Raw state from the game
 
@@ -175,7 +174,7 @@ class GoFishRuleAgentV3(object):
         self.use_raw = True
 
     def step(self, state):
-        ''' 
+        '''
         Args:
             state (dict): Raw state from the game
 

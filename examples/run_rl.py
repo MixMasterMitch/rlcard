@@ -4,33 +4,35 @@ import os
 import argparse
 
 import torch
+import numpy as np
 
 import rlcard
+from rlcard import models
 from rlcard.agents import RandomAgent
-from rlcard.utils import get_device, set_seed, tournament, reorganize, Logger, plot_curve
+from rlcard.utils import get_device, set_seed, tournament_random_opponents, reorganize, Logger, plot_curve
 
 def train(args):
 
     # Check whether gpu is available
     device = get_device()
-        
+
     # Seed numpy, torch, random
     set_seed(args.seed)
 
     # Make the environment with seed
-    env = rlcard.make(args.env, config={'seed': args.seed})
+    env = rlcard.make(args.env, config={'seed': args.seed, 'game_is_training_mode': True})
 
     # Initialize the agent and use random agents as opponents
     if args.algorithm == 'dqn':
         from rlcard.agents import DQNAgent
         agent = DQNAgent(num_actions=env.num_actions,
                          state_shape=env.state_shape[0],
-                         mlp_layers=[64, 64],
+                         mlp_layers=[64],
                          discount_factor=0.999,
                          # update_target_estimator_every=2000,
-                         replay_memory_init_size=500,
-                         batch_size=128,
-                         # epsilon_decay_steps=1000000,
+                         # replay_memory_init_size=500,
+                         batch_size=64,
+                         epsilon_decay_steps=500000,
                          learning_rate=0.000005,
                          device=device)
     elif args.algorithm == 'nfsp':
@@ -40,14 +42,28 @@ def train(args):
                           hidden_layers_sizes=[64,64],
                           q_mlp_layers=[64,64],
                           device=device)
-    agents = [agent]
-    for _ in range(1, env.num_players):
-        agents.append(RandomAgent(num_actions=env.num_actions))
-    env.set_agents(agents)
+
+    opponent_agents = []
+
+    # Random agent
+    opponent_agents.append(RandomAgent(num_actions=env.num_actions))
+
+    # Prior trained agent
+    trained_agent = torch.load('experiments/v2_2_player_model_2/model.pth', map_location=device)
+    trained_agent.set_device(device)
+    opponent_agents.append(trained_agent)
+
+    # Rule models
+    rule_agent_v1 = models.load('go-fish-v1').agents[0]
+    opponent_agents.append(rule_agent_v1)
+    rule_agent_v3 = models.load('go-fish-v3').agents[0]
+    opponent_agents.append(rule_agent_v3)
 
     # Start training
     with Logger(args.log_dir) as logger:
         for episode in range(args.num_episodes):
+            opponent_agent = np.random.choice(opponent_agents)
+            env.set_agents([agent, opponent_agent])
 
             if args.algorithm == 'nfsp':
                 agents[0].sample_episode_policy()
@@ -66,7 +82,7 @@ def train(args):
 
             # Evaluate the performance. Play with random agents.
             if episode % args.evaluate_every == 0:
-                logger.log_performance(env.timestep, tournament(env, args.num_eval_games)[0])
+                logger.log_performance(env.timestep, tournament_random_opponents(env, args.num_eval_games, agent, opponent_agents)[0])
 
         # Get the paths
         csv_path, fig_path = logger.csv_path, logger.fig_path

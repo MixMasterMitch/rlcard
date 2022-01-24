@@ -34,13 +34,16 @@ class GoFishEnv(Env):
         obs_list = []
         player_id = self.game.current_player_turn
         obs_list.extend(state['card_counts'])
+        # obs_list.extend([card_count / (52 / self.num_players) for card_count in state['card_counts']])
         obs_list.extend(state['books'])
-        expected_values = [self.rank_quantity_dict_to_list(player_expected_values) for player_expected_values in state['players_rank_expected_values']]
+        # obs_list.extend([book / 6.5 - 1 for book in state['books'] ])
+        expected_values = [self.rank_quantity_dict_to_list(player_expected_values, 4) for player_expected_values in state['players_rank_expected_values']]
         obs_list.extend([x for y in expected_values for x in y])
         obs_list.append(state['deck_size'])
-        player_hand = self.rank_quantity_dict_to_list(state['player_hand_by_rank'])
+        # obs_list.append(state['deck_size'] / (52 - 5 * self.num_players))
+        player_hand = self.rank_quantity_dict_to_list(state['player_hand_by_rank'], 3)
         obs_list.extend(player_hand)
-        player_public_hand = self.rank_quantity_dict_to_list(state['public_cards'][0])
+        player_public_hand = self.rank_quantity_dict_to_list(state['public_cards'][0], 3)
         obs_list.extend(player_public_hand)
 
         public_not_revealed_count = state['card_counts'][0] - sum(player_public_hand) + len(state['public_possible_cards_of_rank'][0])
@@ -79,8 +82,9 @@ class GoFishEnv(Env):
         return OrderedDict(legal_ids)
 
     @staticmethod
-    def rank_quantity_dict_to_list(rank_dict):
+    def rank_quantity_dict_to_list(rank_dict, normalization=1):
         rank_list = []
         for rank in Card.valid_rank:
             rank_list.append(rank_dict.get(rank, 0))
+            # rank_list.append(rank_dict.get(rank, 0) / normalization)
         return rank_list

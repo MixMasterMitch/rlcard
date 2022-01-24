@@ -360,6 +360,9 @@ class GoFishGame:
         if self.is_training_mode:
             payoffs = []
             for player in self.players:
+                # payoff = len(player.books) - 6.5
+                # squared_payoff = payoff * payoff
+                # payoffs.append(-squared_payoff if payoff < 0 else squared_payoff)
                 payoffs.append(len(player.books) - 6.5)
 
             return payoffs
