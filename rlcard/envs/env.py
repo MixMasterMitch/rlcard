@@ -164,7 +164,7 @@ class Env(object):
             trajectories[player_id].append(state)
 
         # Payoffs
-        payoffs = self.get_payoffs()
+        payoffs = self.get_payoffs(is_training)
 
         return trajectories, payoffs
 

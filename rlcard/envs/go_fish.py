@@ -9,7 +9,6 @@ DEFAULT_GAME_CONFIG = {
     'game_num_players': 2,
     'game_debug': False,
     'game_stats_tracker': None,
-    'game_is_training_mode': False,
 }
 
 class GoFishEnv(Env):
@@ -69,8 +68,8 @@ class GoFishEnv(Env):
         extracted_state['action_record'] = self.action_recorder
         return extracted_state
 
-    def get_payoffs(self):
-        return np.array(self.game.get_payoffs())
+    def get_payoffs(self, is_training):
+        return np.array(self.game.get_payoffs(is_training))
 
     def _decode_action(self, action_id):
         legal_ids = self._get_legal_actions()

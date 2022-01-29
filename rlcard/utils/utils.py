@@ -217,6 +217,8 @@ def tournament(env, num):
             for i, _ in enumerate(payoffs):
                 payoffs[i] += _payoffs[i]
             counter += 1
+        if counter % 5000 == 0:
+            print('Completed {}/{} games'.format(counter, num))
     for i, _ in enumerate(payoffs):
         payoffs[i] /= counter
     return payoffs
@@ -226,8 +228,8 @@ def tournament_random_opponents(env, num, primary_agent, opponent_agents):
     counter = 0
     while counter < num:
         agents = [primary_agent]
-        selected_opponent_agents = np.random.choice(opponent_agents, env.num_players - 1)
-        agents.extend(selected_opponent_agents)
+        for i in range(env.num_players - 1):
+            agents.append(np.random.choice(opponent_agents))
         env.set_agents(agents)
         _, _payoffs = env.run(is_training=False)
         if isinstance(_payoffs, list):

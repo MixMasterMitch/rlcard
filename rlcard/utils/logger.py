@@ -36,6 +36,7 @@ class Logger(object):
         '''
         self.txt_file.write(text+'\n')
         self.txt_file.flush()
+        self.csv_file.flush()
         print(text)
 
     def log_performance(self, timestep, reward):

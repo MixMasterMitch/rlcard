@@ -18,7 +18,6 @@ class GoFishGame:
         self.num_players = game_config['game_num_players']
         self.debug = game_config['game_debug']
         self.stats_tracker = game_config['game_stats_tracker']
-        self.is_training_mode = game_config['game_is_training_mode']
         self.action_list = []
         self.action_space = {}
         self._legal_actions = []
@@ -356,15 +355,14 @@ class GoFishGame:
 
         return state
 
-    def get_payoffs(self):
-        if self.is_training_mode:
+    def get_payoffs(self, is_training=False):
+        if is_training:
             payoffs = []
             for player in self.players:
                 # payoff = len(player.books) - 6.5
                 # squared_payoff = payoff * payoff
                 # payoffs.append(-squared_payoff if payoff < 0 else squared_payoff)
-                payoffs.append(len(player.books) - 6.5)
-
+                payoffs.append(len(player.books) - 13 / self.num_players)
             return payoffs
 
         top_score = 0
@@ -377,10 +375,9 @@ class GoFishGame:
             elif player_score == top_score:
                 players_with_top_score = players_with_top_score + 1
         payoffs = []
-        winner_payoff = 1 if players_with_top_score == 1 else 0
+        winner_payoff = 100 if players_with_top_score == 1 else 50
         for player in self.players:
-            payoffs.append(winner_payoff if len(player.books) == top_score else -1)
-
+            payoffs.append(winner_payoff if len(player.books) == top_score else 0)
         return payoffs
 
 

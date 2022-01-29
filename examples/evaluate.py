@@ -22,20 +22,20 @@ def load_model(model_path, env=None, position=None, device=None):
     else:  # A model in the model zoo
         from rlcard import models
         agent = models.load(model_path).agents[position]
-    
+
     return agent
 
 def evaluate(args):
 
     # Check whether gpu is available
     device = get_device()
-        
+
     # Seed numpy, torch, random
     set_seed(args.seed)
 
     # Make the environment with seed
     stats_tracker = None # StatsTracker()
-    env = rlcard.make(args.env, config={'seed': args.seed, 'game_stats_tracker': stats_tracker, 'game_debug': False})
+    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': len(args.models), 'game_stats_tracker': stats_tracker, 'game_debug': False})
 
     # Load models
     agents = []

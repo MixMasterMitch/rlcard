@@ -50,10 +50,8 @@ class GoFishRuleModelV1(Model):
     def __init__(self):
         ''' Load pretrained model
         '''
-        env = rlcard.make('go_fish')
-
         rule_agent = GoFishRuleAgentV1()
-        self.rule_agents = [rule_agent for _ in range(env.num_players)]
+        self.rule_agents = [rule_agent for _ in range(4)]
 
     @property
     def agents(self):
@@ -140,10 +138,8 @@ class GoFishRuleModelV2(Model):
     def __init__(self):
         ''' Load pretrained model
         '''
-        env = rlcard.make('go_fish')
-
         rule_agent = GoFishRuleAgentV2()
-        self.rule_agents = [rule_agent for _ in range(env.num_players)]
+        self.rule_agents = [rule_agent for _ in range(4)]
 
     @property
     def agents(self):
@@ -212,10 +208,8 @@ class GoFishRuleModelV3(Model):
     def __init__(self):
         ''' Load pretrained model
         '''
-        env = rlcard.make('go_fish')
-
         rule_agent = GoFishRuleAgentV3()
-        self.rule_agents = [rule_agent for _ in range(env.num_players)]
+        self.rule_agents = [rule_agent for _ in range(4)]
 
     @property
     def agents(self):
