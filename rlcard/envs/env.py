@@ -30,7 +30,7 @@ class Env(object):
         # Game specific configurations
         # Currently only support blackjack、limit-holdem、no-limit-holdem
         # TODO support game configurations for all the games
-        supported_envs = ['blackjack', 'leduc-holdem', 'limit-holdem', 'no-limit-holdem', 'go_fish']
+        supported_envs = ['blackjack', 'leduc-holdem', 'limit-holdem', 'no-limit-holdem', 'go_fish', 'hearts']
         if self.name in supported_envs:
             _game_config = self.default_game_config.copy()
             for key in config:

@@ -47,3 +47,8 @@ register(
     env_id='go_fish',
     entry_point='rlcard.envs.go_fish:GoFishEnv',
 )
+
+register(
+    env_id='hearts',
+    entry_point='rlcard.envs.hearts:HeartsEnv',
+)

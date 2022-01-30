@@ -11,7 +11,7 @@ class Card:
     suit = None
     rank = None
     valid_suit = ['S', 'H', 'D', 'C', 'BJ', 'RJ']
-    valid_rank = ['A', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K']
+    valid_rank = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 
     def __init__(self, suit, rank):
         ''' Initialize the suit and rank of a card
@@ -23,6 +23,13 @@ class Card:
         self.suit = suit
         self.rank = rank
         self._hash = Card.valid_rank.index(self.rank) + 100 * Card.valid_suit.index(self.suit)
+
+    def __lt__(self, other):
+        self_rank_index = Card.valid_rank.index(self.rank)
+        other_rank_index = Card.valid_rank.index(other.rank)
+        if self_rank_index == other_rank_index:
+            return Card.valid_suit.index(self.suit) < Card.valid_suit.index(other.suit)
+        return self_rank_index < other_rank_index
 
     def __eq__(self, other):
         if isinstance(other, Card):
@@ -41,7 +48,7 @@ class Card:
             string: the combination of rank and suit of a card. Eg: AS, 5H, JD, 3C, ...
         '''
         return self.rank + self.suit
-        
+
     __repr__ = __str__
 
     def get_index(self):
@@ -51,3 +58,19 @@ class Card:
             string: the combination of suit and rank of a card. Eg: 1S, 2H, AD, BJ, RJ...
         '''
         return self.suit+self.rank
+
+    def is_a_heart(self):
+        return self.suit == 'H'
+
+    def is_the_queen(self):
+        return self.suit == 'S' and self.rank == 'Q'
+
+    def breaks_hearts(self):
+        return self.is_a_heart() or self.is_the_queen()
+
+    def point_value(self):
+        if self.is_the_queen():
+            return 13
+        if self.is_a_heart():
+            return 1
+        return 0

@@ -98,7 +98,7 @@ def elegent_form(card):
 
     return suits[card[0]] + rank
 
-def print_card(cards):
+def print_card(cards, prefix = 'test'):
     ''' Nicely print a card or list of cards
 
     Args:
@@ -136,16 +136,16 @@ def print_card(cards):
 
             lines[0].append('┌─────────┐')
             lines[1].append('│{}{}       │'.format(rank, space))
-            lines[2].append('│         │')
+            lines[2].append('│{}        │'.format(suit))
             lines[3].append('│         │')
             lines[4].append('│    {}    │'.format(suit))
             lines[5].append('│         │')
-            lines[6].append('│         │')
+            lines[6].append('│        {}│'.format(suit))
             lines[7].append('│       {}{}│'.format(space, rank))
             lines[8].append('└─────────┘')
 
     for line in lines:
-        print ('   '.join(line))
+        print (prefix + '   '.join(line))
 
 def reorganize(trajectories, payoffs):
     ''' Reorganize the trajectory to make it RL friendly

@@ -14,7 +14,8 @@ Date, Hours
 1/23, 1
 Total: 35.5
 1/28, 2.5
-1/29, .5
+1/29, 2.5
+1/31, 1.5
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random

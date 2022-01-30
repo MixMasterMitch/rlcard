@@ -5,7 +5,7 @@ import argparse
 
 import rlcard
 from rlcard.agents import DQNAgent, RandomAgent
-from rlcard.utils import get_device, set_seed, tournament, StatsTracker
+from rlcard.utils import get_device, set_seed, tournament
 
 def load_model(model_path, env=None, position=None, device=None):
     if os.path.isfile(model_path):  # Torch model
@@ -31,11 +31,10 @@ def evaluate(args):
     device = get_device()
 
     # Seed numpy, torch, random
-    set_seed(args.seed)
+    # set_seed(args.seed)
 
     # Make the environment with seed
-    stats_tracker = None # StatsTracker()
-    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': len(args.models), 'game_stats_tracker': stats_tracker, 'game_debug': False})
+    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': len(args.models), 'game_debug': True})
 
     # Load models
     agents = []
@@ -47,13 +46,11 @@ def evaluate(args):
     rewards = tournament(env, args.num_games)
     for position, reward in enumerate(rewards):
         print(position, args.models[position], reward)
-    if stats_tracker:
-        print(stats_tracker.finalize())
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Evaluation example in RLCard")
     parser.add_argument('--env', type=str, default='leduc-holdem',
-            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish'])
+            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish', 'hearts'])
     parser.add_argument('--models', nargs='*', default=['experiments/leduc_holdem_dqn_result/model.pth', 'random'])
     parser.add_argument('--cuda', type=str, default='')
     parser.add_argument('--seed', type=int, default=42)
