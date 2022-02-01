@@ -34,7 +34,7 @@ def evaluate(args):
     # set_seed(args.seed)
 
     # Make the environment with seed
-    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': len(args.models), 'game_debug': True})
+    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': len(args.models), 'game_debug': False})
 
     # Load models
     agents = []

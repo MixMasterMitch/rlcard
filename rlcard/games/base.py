@@ -22,7 +22,9 @@ class Card:
         '''
         self.suit = suit
         self.rank = rank
-        self._hash = Card.valid_rank.index(self.rank) + 100 * Card.valid_suit.index(self.suit)
+        self.str = self.rank + self.suit
+        # self._hash = Card.valid_rank.index(self.rank) + 100 * Card.valid_suit.index(self.suit)
+        self._index = Card.valid_suit.index(self.suit) * 13 + Card.valid_rank.index(self.rank)
 
     def __lt__(self, other):
         self_rank_index = Card.valid_rank.index(self.rank)
@@ -39,7 +41,7 @@ class Card:
             return NotImplemented
 
     def __hash__(self):
-        return self._hash
+        return self._index
 
     def __str__(self):
         ''' Get string representation of a card.
@@ -58,6 +60,9 @@ class Card:
             string: the combination of suit and rank of a card. Eg: 1S, 2H, AD, BJ, RJ...
         '''
         return self.suit+self.rank
+
+    def get_numeric_index(self):
+        return self._index
 
     def is_a_heart(self):
         return self.suit == 'H'

@@ -50,7 +50,7 @@ class HumanAgent(object):
         current_action_number = 0
         for suit in Card.valid_suit:
             for rank in Card.valid_rank:
-                action = '{}{}'.format(suit, rank)
+                action = '{}{}'.format(rank, suit)
                 if action in state['raw_legal_actions']:
                     if passing_cards:
                         print('{}: Pass {} to Player {}'.format(current_action_number, action, pass_player_id))

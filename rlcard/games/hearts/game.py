@@ -22,7 +22,7 @@ class HeartsGame:
         self._legal_actions = []
         self._legal_actions_dirty = True
         for card in init_standard_deck():
-            action = '{}{}'.format(card.suit, card.rank)
+            action = card.str
             self.action_space[action] = len(self.action_list)
             self.action_list.append(action)
 
@@ -42,7 +42,9 @@ class HeartsGame:
         # Setup players
         self.players = []
         for i in range(self.num_players):
-            self.players.append(Player(i))
+            player = Player(i)
+            player.game_score = random.randrange(100) # TODO: Not random
+            self.players.append(player)
 
         # Setup dealer and deal cards
         self.dealer = Dealer(self.np_random)
@@ -82,7 +84,7 @@ class HeartsGame:
         self._legal_actions_dirty = True
 
         player = self._get_current_player()
-        card = Card(action[0], action[1])
+        card = Card(action[1], action[0])
 
         if self.passing_cards:
             target_player = self._get_player_num_to_left(player, self.passing_cards_players_to_left)
@@ -194,7 +196,7 @@ class HeartsGame:
         playable_cards = set()
         if self.passing_cards:
             playable_cards = player.hand
-        if self.current_trick_suit == None:
+        elif self.current_trick_suit == None:
             for card in player.hand:
                 if self.hearts_are_broken or not card.is_a_heart():
                     playable_cards.add(card)
@@ -210,7 +212,7 @@ class HeartsGame:
         actions = []
         for i in range(self.num_players - 1):
             for card in playable_cards:
-                actions.append('{}{}'.format(card.suit, card.rank))
+                actions.append(card.str)
 
         self._legal_actions = actions
         self._legal_actions_dirty = False
@@ -237,29 +239,30 @@ class HeartsGame:
                 'trick', Card[] - Current trick
                 'player_hand', {Card} - All of the cards in the current player's hand
                 'round_scores', int[] - The current round score of each player
+                'game_scores', int[] - The game score of each player (not including the current round)
         '''
         state = {}
 
         current_player = self._get_current_player()
-        other_players = self._get_other_players()
         rotated_players = self.players[current_player.player_id:] + self.players[:current_player.player_id]
 
-        passed_cards = []
         played_cards = []
         public_void_suits = []
         round_scores = []
+        game_scores = []
         for player in rotated_players:
-            passed_cards.append(player.passed_cards)
             played_cards.append(player.played_cards)
             public_void_suits.append(player.public_void_suits)
             round_scores.append(player.round_score)
+            game_scores.append(player.game_score)
+
 
         state['legal_actions'] = self._get_legal_actions(player_id)
         state['current_player_id'] = player_id
         state['hearts_are_broken'] = self.hearts_are_broken
         state['passing_cards'] = self.passing_cards
         state['passing_cards_players_to_left'] = self.passing_cards_players_to_left
-        state['passed_cards'] = passed_cards
+        state['passed_cards'] = current_player.passed_cards
         state['is_lead'] = not self.passing_cards and self.current_trick_suit == None
         state['can_sluff'] = not self.passing_cards and not self.current_trick_suit == None and current_player.is_void_of_suit(self.current_trick_suit)
         state['played_cards'] = played_cards
@@ -267,6 +270,7 @@ class HeartsGame:
         state['trick'] = self.current_trick
         state['player_hand'] = current_player.hand
         state['round_scores'] = round_scores
+        state['game_scores'] = game_scores
 
         return state
 

@@ -14,6 +14,8 @@ DEFAULT_GAME_CONFIG = {
     'game_render_steps': False
 }
 
+SUITS = ['S', 'H', 'D', 'C']
+
 class HeartsEnv(Env):
 
     def __init__(self, config):
@@ -21,48 +23,59 @@ class HeartsEnv(Env):
         self.default_game_config = DEFAULT_GAME_CONFIG
         self.game = Game()
         super().__init__(config)
-        self.state_shape_num_elements = 1
+        # 1 = hearts are broken
+        # 1 = passing cards mode
+        # 1 = number of players to the left to pass to
+        # 1 = player is to lead next trick
+        # 1 = player can sluff
+        # 1 * num_players = current round scores of all players
+        # 1 * num_players = game scores of all players
+        # 4 * num_players = publicly void suits of all players
+        # 52 = cards passed by the current player
+        # 52 = current trick
+        # 52 = player's hand
+        # 52 * num_cards = played cards by all players
+        self.state_shape_num_elements = 161 + 58 * self.num_players
         self.state_shape = [[self.state_shape_num_elements] for _ in range(self.num_players)]
         self.action_shape = [None for _ in range(self.num_players)]
 
     def _extract_state(self, state):
-        # obs_list = []
-        # player_id = self.game.current_player_turn
-        # obs_list.extend(state['card_counts'])
-        # # obs_list.extend([card_count / (52 / self.num_players) for card_count in state['card_counts']])
-        # obs_list.extend(state['books'])
-        # # obs_list.extend([book / 6.5 - 1 for book in state['books'] ])
-        # expected_values = [self.rank_quantity_dict_to_list(player_expected_values, 4) for player_expected_values in state['players_rank_expected_values']]
-        # obs_list.extend([x for y in expected_values for x in y])
-        # obs_list.append(state['deck_size'])
-        # # obs_list.append(state['deck_size'] / (52 - 5 * self.num_players))
-        # player_hand = self.rank_quantity_dict_to_list(state['player_hand_by_rank'], 3)
-        # obs_list.extend(player_hand)
-        # player_public_hand = self.rank_quantity_dict_to_list(state['public_cards'][0], 3)
-        # obs_list.extend(player_public_hand)
-
-        # public_not_revealed_count = state['card_counts'][0] - sum(player_public_hand) + len(state['public_possible_cards_of_rank'][0])
-        # player_public_not_possible_percentage = []
-        # not_possible = state['public_not_possible_cards_of_rank'][0]
-        # for rank in Card.valid_rank:
-        #     if rank not in state['remaining_ranks'] or public_not_revealed_count == 0:
-        #         percentage = 1
-        #     elif rank not in not_possible:
-        #         percentage = 0
-        #     else:
-        #         percentage = not_possible[rank] / public_not_revealed_count
-        #     player_public_not_possible_percentage.append(percentage)
-        # obs_list.extend(player_public_not_possible_percentage)
-
         obs = np.zeros((self.state_shape_num_elements), dtype=int)
-        # obs[0:] = obs_list
+        obs[0] = state['hearts_are_broken']
+        obs[1] = state['passing_cards']
+        obs[2] = state['passing_cards_players_to_left']
+        obs[3] = state['is_lead']
+        obs[4] = state['can_sluff']
+        index = 5
+        for round_score in state['round_scores']:
+            obs[index] = round_score
+            index += 1
+        for game_score in state['game_scores']:
+            obs[index] = game_score
+            index += 1
+        for public_void_suits in state['public_void_suits']:
+            for suit in SUITS:
+                if public_void_suits[suit]:
+                    obs[index] = 1
+                index += 1
+        index = self._apply_cards_to_obs(obs, index, state['passed_cards'])
+        index = self._apply_cards_to_obs(obs, index, state['trick'])
+        index = self._apply_cards_to_obs(obs, index, state['player_hand'])
+        for played_cards in state['played_cards']:
+            index = self._apply_cards_to_obs(obs, index, played_cards)
 
-        legal_action_ids = self._get_legal_actions()
-        extracted_state = {'obs': obs, 'legal_actions': legal_action_ids}
-        extracted_state['raw_obs'] = state
-        extracted_state['raw_legal_actions'] = [a for a in state['legal_actions']]
-        extracted_state['action_record'] = self.action_recorder
-        return extracted_state
+        return {
+            'obs': obs,
+            'legal_actions': self._get_legal_actions(),
+            'raw_obs': state,
+            'raw_legal_actions': [a for a in state['legal_actions']],
+            'action_record': self.action_recorder
+        }
+
+    def _apply_cards_to_obs(self, obs, offset, cards):
+        for card in cards:
+            obs[offset + card.get_numeric_index()] = 1
+        return offset + 52
 
     def step(self, action, raw_action=False):
         state, player_id = Env.step(self, action, raw_action)
