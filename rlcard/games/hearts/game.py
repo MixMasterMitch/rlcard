@@ -17,6 +17,7 @@ class HeartsGame:
         self.num_players = game_config['game_num_players']
         self.debug = game_config['game_debug']
         self.render_steps = game_config['game_render_steps']
+        self.is_round_mode = game_config['game_is_round_mode']
         self.action_list = []
         self.action_space = {}
         self._legal_actions = []
@@ -35,19 +36,34 @@ class HeartsGame:
         '''
         self._legal_actions_dirty = True
 
-        self.current_trick = [] # card[]
-        self.current_trick_suit = None
-        self.hearts_are_broken = False
-
         # Setup players
         self.players = []
         for i in range(self.num_players):
             player = Player(i)
-            player.game_score = random.randrange(100) # TODO: Not random
+            player.game_score = 0 if not self.is_round_mode else random.randrange(100)
             self.players.append(player)
 
-        # Setup dealer and deal cards
+        # Setup dealer
         self.dealer = Dealer(self.np_random)
+
+        # Setup passing
+        self.passing_cards_players_to_left = random.randrange(self.num_players)
+
+        # Choose a random starting player
+        self.starting_player = random.randrange(self.num_players)
+        self.current_player_turn = self.starting_player
+
+        self._init_round()
+
+        return self.get_state(self.current_player_turn), self.current_player_turn
+
+    def _init_round(self):
+        self.current_trick = [] # card[]
+        self.current_trick_suit = None
+        self.hearts_are_broken = False
+
+        # Deal cards
+        self.dealer.shuffle()
         counter = 0
         while len(self.dealer.deck) > 0:
             player = self.players[counter % self.num_players]
@@ -55,21 +71,19 @@ class HeartsGame:
             counter += 1
 
         # Setup passing
-        self.passing_cards_players_to_left = random.randrange(self.num_players) # TODO: Not random
+        self.passing_cards_players_to_left = (self.passing_cards_players_to_left + 1) % self.num_players # TODO: Use actual hearts order
         self.num_passed_cards = 0
         self.passing_cards = self.passing_cards_players_to_left > 0
 
-        # Choose a random starting player
-        self.starting_player = random.randrange(self.num_players)
+        # Next player starts this round
+        self.starting_player = (self.starting_player + 1) % self.num_players
         self.current_player_turn = self.starting_player
 
-        self._print('<< Player {} is starting'.format(self.starting_player))
+        self._print('<< Player {} is starting this round'.format(self.starting_player))
         if self.passing_cards_players_to_left == 0:
             self._print('<< Not passing any cards; keeper round')
         else:
             self._print('<< Passing 3 cards {} players to the left'.format(self.passing_cards_players_to_left))
-
-        return self.get_state(self.current_player_turn), self.current_player_turn
 
     def step(self, action):
         ''' Get the next state
@@ -138,6 +152,14 @@ class HeartsGame:
 
             else:
                 self._advance_to_next_player()
+
+        # Round over?
+        if not self.is_round_mode and self._is_round_over():
+            self._print('<< Round over')
+            round_scores = self._get_round_scores()
+            for i, player in enumerate(self.players):
+                player.end_round(round_scores[i])
+            self._init_round()
 
         return self.get_state(self.current_player_turn), self.current_player_turn
 
@@ -275,26 +297,54 @@ class HeartsGame:
         return state
 
     def get_payoffs(self, is_training=False):
-        self._print('<< Round over')
         payoffs = []
+        if self.is_round_mode:
+            round_scores = self._get_round_scores()
+
+            if is_training:
+                for round_score in round_scores:
+                    payoffs.append(26 - round_score)
+            else:
+                payoffs = round_scores
+
+        else:
+            game_scores = [p.game_score for p in self.players]
+
+            if is_training:
+                for game_score in game_scores:
+                    payoffs.append(100 - game_score)
+            else:
+                winner_indexes = set()
+                winner_score = 100
+                for i, game_score in enumerate(game_scores):
+                    if game_score == winner_score:
+                        winner_indexes.add(i)
+                    if game_score < winner_score:
+                        winner_score = game_score
+                        winner_indexes.clear()
+                        winner_indexes.add(i)
+                winner_reward = 100 if len(winner_indexes) == 1 else 50
+                for i in range(self.num_players):
+                    payoffs.append(winner_reward if i in winner_indexes else 0)
+
+        return payoffs
+
+    def _get_round_scores(self):
+        round_scores = []
         a_player_got_control = False
         for player in self.players:
             if player.round_score == 26:
                 a_player_got_control = True
                 self._print('<< Player {} took control'.format(player.player_id))
-            payoffs.append(player.round_score)
+            round_scores.append(player.round_score)
 
-        for i, payoff in enumerate(list(payoffs)):
+        for i, round_score in enumerate(list(round_scores)):
             if a_player_got_control:
-                payoffs[i] = 0 if payoff == 26 else 26
+                round_scores[i] = 0 if round_score == 26 else 26
             else:
-                self._print('<< Player {} got {} points'.format(i, payoffs[i]))
+                self._print('<< Player {} got {} points'.format(i, round_scores[i]))
 
-        if is_training:
-            for i, payoff in enumerate(list(payoffs)):
-                payoffs[i] = 26 - payoff
-
-        return payoffs
+        return round_scores
 
     def is_over(self):
         ''' Check if the game is over
@@ -302,6 +352,15 @@ class HeartsGame:
         Returns:
             status (bool): True/False
         '''
+        if self.is_round_mode:
+            return self._is_round_over()
+
+        for player in self.players:
+            if player.game_score > 100:
+                return True
+        return False
+
+    def _is_round_over(self):
         for player in self.players:
             if len(player.hand) > 0:
                 return False

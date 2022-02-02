@@ -11,7 +11,8 @@ from rlcard.utils.utils import print_card
 DEFAULT_GAME_CONFIG = {
     'game_num_players': 2,
     'game_debug': False,
-    'game_render_steps': False
+    'game_render_steps': False,
+    'game_is_round_mode': False,
 }
 
 SUITS = ['S', 'H', 'D', 'C']

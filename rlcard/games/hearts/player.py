@@ -11,12 +11,18 @@ class HeartsPlayer:
         '''
         self.player_id = player_id
         self.hand = set() # {Card} - Cards in this player's hand
-        self.hand_by_suit = { 'S': 0, 'H': 0, 'D': 0, 'C': 0 } # suit -> quantity
-        self.public_void_suits = { 'S': False, 'H': False, 'D': False, 'C': False } # suit -> boolean
         self.played_cards = set() # {Card} - Cards played by this player
         self.passed_cards = set() # {Card} - Cards passed by this player to another player
-        self.round_score = 0
         self.game_score = 0
+        self._init_round()
+
+    def _init_round(self):
+        # self.hand.clear() should already be empty
+        self.played_cards.clear()
+        self.passed_cards.clear()
+        self.hand_by_suit = { 'S': 0, 'H': 0, 'D': 0, 'C': 0 } # suit -> quantity
+        self.public_void_suits = { 'S': False, 'H': False, 'D': False, 'C': False } # suit -> boolean
+        self.round_score = 0
 
     def receive_card(self, card):
         self.hand.add(card)
@@ -45,3 +51,7 @@ class HeartsPlayer:
 
     def is_void_of_suit(self, suit):
         return self.hand_by_suit[suit] == 0
+
+    def end_round(self, round_score):
+        self.game_score += round_score
+        self._init_round()

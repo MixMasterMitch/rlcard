@@ -7,12 +7,11 @@ class HeartsDealer:
         ''' Initialize a Hearts dealer class
         '''
         self.np_random = np_random
-        self.deck = init_standard_deck()
-        self.shuffle()
 
     def shuffle(self):
         ''' Shuffle the deck
         '''
+        self.deck = init_standard_deck()
         shuffle_deck = np.array(self.deck)
         self.np_random.shuffle(shuffle_deck)
         self.deck = list(shuffle_deck)

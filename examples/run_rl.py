@@ -28,13 +28,13 @@ def train(args):
         from rlcard.agents import DQNAgent
         agent = DQNAgent(num_actions=env.num_actions,
                          state_shape=env.state_shape[0],
-                         mlp_layers=[128],
+                         mlp_layers=[1024],
                          discount_factor=0.999,
                          # update_target_estimator_every=2000,
                          # replay_memory_init_size=500,
                          batch_size=64,
                          epsilon_decay_steps=500000,
-                         epsilon_end=0.05,
+                         # epsilon_end=0.05,
                          learning_rate=0.000005,
                          device=device)
     elif args.algorithm == 'nfsp':
@@ -56,10 +56,10 @@ def train(args):
     # opponent_agents.append(trained_agent)
 
     # Rule models
-    rule_agent_v1 = models.load('go-fish-v1').agents[0]
-    opponent_agents.append(rule_agent_v1)
-    rule_agent_v3 = models.load('go-fish-v3').agents[0]
-    opponent_agents.append(rule_agent_v3)
+    # rule_agent_v1 = models.load('go-fish-v1').agents[0]
+    # opponent_agents.append(rule_agent_v1)
+    # rule_agent_v3 = models.load('go-fish-v3').agents[0]
+    # opponent_agents.append(rule_agent_v3)
 
     # Start training
     start_time = datetime.now()
@@ -112,15 +112,15 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("DQN/NFSP example in RLCard")
     parser.add_argument('--env', type=str, default='leduc-holdem',
-            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish'])
+            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish', 'hearts'])
     parser.add_argument('--algorithm', type=str, default='dqn', choices=['dqn', 'nfsp'])
     parser.add_argument('--cuda', type=str, default='')
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num_episodes', type=int, default=250000)
+    parser.add_argument('--num_episodes', type=int, default=100000)
     parser.add_argument('--num_eval_games', type=int, default=5000)
-    parser.add_argument('--evaluate_every', type=int, default=5000)
+    parser.add_argument('--evaluate_every', type=int, default=2000)
     parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_dqn_result/')
-    parser.add_argument('--num_players', type=int, default=2)
+    parser.add_argument('--num_players', type=int, default=4)
 
     args = parser.parse_args()
 
