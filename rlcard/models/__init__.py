@@ -41,3 +41,7 @@ register(
 register(
     model_id = 'go-fish-v3',
     entry_point='rlcard.models.go_fish_rule_models:GoFishRuleModelV3')
+
+register(
+    model_id = 'hearts-v1',
+    entry_point='rlcard.models.hearts_rule_models:HeartsRuleModelV1')
