@@ -131,7 +131,7 @@ class DQNAgent(object):
         if tmp>=0 and tmp%self.train_every == 0:
             self.train()
 
-    def step(self, state):
+    def step(self, state, num_actions=1):
         ''' Predict the action for genrating training data but
             have the predictions disconnected from the computation graph
 
@@ -145,13 +145,17 @@ class DQNAgent(object):
         epsilon = self.epsilons[min(self.total_t, self.epsilon_decay_steps-1)]
         legal_actions = list(state['legal_actions'].keys())
         probs = np.ones(len(legal_actions), dtype=float) * epsilon / len(legal_actions)
-        best_action_idx = legal_actions.index(np.argmax(q_values))
-        probs[best_action_idx] += (1.0 - epsilon)
-        action_idx = np.random.choice(np.arange(len(probs)), p=probs)
+        best_q_value_indexes = self._get_n_top_indexes(q_values, num_actions)
+        for index in best_q_value_indexes:
+            best_action_index = legal_actions.index(index)
+            probs[best_action_index] += (1.0 - epsilon)
+        action_indexes = np.random.choice(np.arange(len(probs)), size=num_actions, p=probs)
 
-        return legal_actions[action_idx]
+        if num_actions == 1:
+            return legal_actions[action_indexes[0]]
+        return legal_actions[action_indexes]
 
-    def eval_step(self, state):
+    def eval_step(self, state, num_actions=1):
         ''' Predict the action for evaluation purpose.
 
         Args:
@@ -162,12 +166,14 @@ class DQNAgent(object):
             info (dict): A dictionary containing information
         '''
         q_values = self.predict(state)
-        best_action = np.argmax(q_values)
+        best_action_indexes = self._get_n_top_indexes(q_values, num_actions)
 
         # info = {}
         # info['values'] = {state['raw_legal_actions'][i]: float(q_values[list(state['legal_actions'].keys())[i]]) for i in range(len(state['legal_actions']))}
 
-        return best_action, None
+        if num_actions == 1:
+            return best_action_indexes[0], None
+        return best_action_indexes, None
 
     def predict(self, state):
         ''' Predict the masked Q-values
@@ -239,6 +245,9 @@ class DQNAgent(object):
         self.device = device
         self.q_estimator.device = device
         self.target_estimator.device = device
+
+    def _get_n_top_indexes(self, array, n):
+        return np.argpartition(array, -n)[-n:]
 
 class Estimator(object):
     '''
