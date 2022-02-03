@@ -60,7 +60,7 @@ class Env(object):
         '''
         state, player_id = self.game.init_game()
         self.action_recorder = []
-        return self._extract_state(state), player_id
+        return self._extract_state_if_needed(state, player_id), player_id
 
     def step(self, action, raw_action=False):
         ''' Step forward
@@ -83,7 +83,7 @@ class Env(object):
         self.action_recorder.append((self.get_player_id(), action))
         next_state, player_id = self.game.step(action)
 
-        return self._extract_state(next_state), player_id
+        return self._extract_state_if_needed(next_state, player_id), player_id
 
     def step_back(self):
         ''' Take one step backward.
@@ -146,7 +146,7 @@ class Env(object):
                 action = self.agents[player_id].step(state)
 
             # Environment steps
-            next_state, next_player_id = self.step(action, self.agents[player_id].use_raw)
+            next_state, next_player_id = self.step(action, self.agents[player_id].use_raw_action)
             # Save action
             trajectories[player_id].append(action)
 
@@ -194,7 +194,7 @@ class Env(object):
         Returns:
             (numpy.array): The observed state of the player
         '''
-        return self._extract_state(self.game.get_state(player_id))
+        return self._extract_state_if_needed(self.game.get_state(player_id), player_id)
 
     def get_payoffs(self):
         ''' Get the payoffs of players. Must be implemented in the child class.
@@ -229,6 +229,9 @@ class Env(object):
         self.np_random, seed = seeding.np_random(seed)
         self.game.np_random = self.np_random
         return seed
+
+    def _extract_state_if_needed(self, state, player_id):
+        return state if self.agents[player_id].use_raw_state else self._extract_state(state)
 
     def _extract_state(self, state):
         ''' Extract useful information from state for RL. Must be implemented in the child class.

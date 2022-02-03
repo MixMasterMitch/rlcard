@@ -82,7 +82,8 @@ class DQNAgent(object):
             learning_rate (float): The learning rate of the DQN agent.
             device (torch.device): whether to use the cpu or gpu
         '''
-        self.use_raw = False
+        self.use_raw_action = False
+        self.use_raw_state = False
         self.replay_memory_init_size = replay_memory_init_size
         self.update_target_estimator_every = update_target_estimator_every
         self.discount_factor = discount_factor
@@ -163,10 +164,10 @@ class DQNAgent(object):
         q_values = self.predict(state)
         best_action = np.argmax(q_values)
 
-        info = {}
-        info['values'] = {state['raw_legal_actions'][i]: float(q_values[list(state['legal_actions'].keys())[i]]) for i in range(len(state['legal_actions']))}
+        # info = {}
+        # info['values'] = {state['raw_legal_actions'][i]: float(q_values[list(state['legal_actions'].keys())[i]]) for i in range(len(state['legal_actions']))}
 
-        return best_action, info
+        return best_action, None
 
     def predict(self, state):
         ''' Predict the masked Q-values
@@ -177,7 +178,7 @@ class DQNAgent(object):
         Returns:
             q_values (numpy.array): a 1-d array where each entry represents a Q value
         '''
-        
+
         q_values = self.q_estimator.predict_nograd(np.expand_dims(state['obs'], 0))[0]
         masked_q_values = -np.inf * np.ones(self.num_actions, dtype=float)
         legal_actions = list(state['legal_actions'].keys())

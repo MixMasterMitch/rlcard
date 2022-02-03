@@ -11,7 +11,8 @@ class RandomAgent(object):
         Args:
             num_actions (int): The size of the ouput action space
         '''
-        self.use_raw = False
+        self.use_raw_action = True
+        self.use_raw_state = True
         self.num_actions = num_actions
 
     @staticmethod
@@ -24,7 +25,7 @@ class RandomAgent(object):
         Returns:
             action (int): The action predicted (randomly chosen) by the random agent
         '''
-        return np.random.choice(list(state['legal_actions'].keys()))
+        return np.random.choice(state['raw_legal_actions'])
 
     def eval_step(self, state):
         ''' Predict the action given the current state for evaluation.
@@ -37,11 +38,11 @@ class RandomAgent(object):
             action (int): The action predicted (randomly chosen) by the random agent
             probs (list): The list of action probabilities
         '''
-        probs = [0 for _ in range(self.num_actions)]
-        for i in state['legal_actions']:
-            probs[i] = 1/len(state['legal_actions'])
+        # probs = [0 for _ in range(self.num_actions)]
+        # for i in state['legal_actions']:
+        #     probs[i] = 1/len(state['legal_actions'])
 
-        info = {}
-        info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
+        # info = {}
+        # info['probs'] = {state['raw_legal_actions'][i]: probs[list(state['legal_actions'].keys())[i]] for i in range(len(state['legal_actions']))}
 
-        return self.step(state), info
+        return self.step(state), None

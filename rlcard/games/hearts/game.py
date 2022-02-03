@@ -20,8 +20,6 @@ class HeartsGame:
         self.is_round_mode = game_config['game_is_round_mode']
         self.action_list = []
         self.action_space = {}
-        self._legal_actions = []
-        self._legal_actions_dirty = True
         for card in init_standard_deck():
             action = card.str
             self.action_space[action] = len(self.action_list)
@@ -34,8 +32,6 @@ class HeartsGame:
             state (dict): the first state of the game
             player_id (int): current player's id
         '''
-        self._legal_actions_dirty = True
-
         # Setup players
         self.players = []
         for i in range(self.num_players):
@@ -95,8 +91,6 @@ class HeartsGame:
             dict: next player's state
             int: next plater's id
         '''
-        self._legal_actions_dirty = True
-
         player = self._get_current_player()
         card = Card(action[1], action[0])
 
@@ -202,18 +196,12 @@ class HeartsGame:
         '''
         return self.current_player_turn
 
-    def get_legal_actions(self):
-        return self._get_legal_actions(self.current_player_turn)
-
     def _get_legal_actions(self, player_id):
         ''' Return the legal actions for current player
 
         Returns:
             (list): A list of legal actions
         '''
-        if not self._legal_actions_dirty:
-            return self._legal_actions
-
         player = self.players[player_id]
         playable_cards = set()
         if self.passing_cards:
@@ -236,8 +224,6 @@ class HeartsGame:
             for card in playable_cards:
                 actions.append(card.str)
 
-        self._legal_actions = actions
-        self._legal_actions_dirty = False
         return actions
 
     def get_state(self, player_id):
@@ -279,7 +265,7 @@ class HeartsGame:
             game_scores.append(player.game_score)
 
 
-        state['legal_actions'] = self._get_legal_actions(player_id)
+        state['raw_legal_actions'] = self._get_legal_actions(player_id)
         state['current_player_id'] = player_id
         state['hearts_are_broken'] = self.hearts_are_broken
         state['passing_cards'] = self.passing_cards

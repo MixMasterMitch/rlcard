@@ -9,41 +9,39 @@ from datetime import datetime
 
 import rlcard
 from rlcard import models
-from rlcard.agents import RandomAgent
+from rlcard.agents import RandomAgent, DQNAgent
 from rlcard.utils import get_device, set_seed, tournament_random_opponents, reorganize, Logger, plot_curve
 
-def train(args):
+NUM_PLAYERS = 4
+NUM_EPISODES = 10_000
+NUM_EVAL_GAMES = 1_000
+EVAL_EVERY = 1_000
+LOGS_DIR = 'experiments/hearts_v1_4_player_model_6'
+
+def train():
 
     # Check whether gpu is available
     device = get_device()
 
     # Seed numpy, torch, random
-    set_seed(args.seed)
+    seed = 42
+    set_seed(seed)
 
     # Make the environment with seed
-    env = rlcard.make(args.env, config={'seed': args.seed, 'game_num_players': args.num_players})
+    env = rlcard.make('hearts', config={'seed': seed, 'game_num_players': NUM_PLAYERS})
 
-    # Initialize the agent and use random agents as opponents
-    if args.algorithm == 'dqn':
-        from rlcard.agents import DQNAgent
-        agent = DQNAgent(num_actions=env.num_actions,
-                         state_shape=env.state_shape[0],
-                         mlp_layers=[1024],
-                         discount_factor=0.999,
-                         # update_target_estimator_every=2000,
-                         # replay_memory_init_size=500,
-                         batch_size=64,
-                         epsilon_decay_steps=500000,
-                         # epsilon_end=0.05,
-                         learning_rate=0.000005,
-                         device=device)
-    elif args.algorithm == 'nfsp':
-        from rlcard.agents import NFSPAgent
-        agent = NFSPAgent(num_actions=env.num_actions,
-                          state_shape=env.state_shape[0],
-                          hidden_layers_sizes=[64,64],
-                          q_mlp_layers=[64,64],
-                          device=device)
+    # Initialize the training agent
+    agent = DQNAgent(num_actions=env.num_actions,
+                     state_shape=env.state_shape[0],
+                     mlp_layers=[1024],
+                     discount_factor=0.999,
+                     # update_target_estimator_every=2000,
+                     # replay_memory_init_size=500,
+                     batch_size=64,
+                     epsilon_decay_steps=500000,
+                     # epsilon_end=0.05,
+                     learning_rate=0.000005,
+                     device=device)
 
     opponent_agents = []
 
@@ -64,15 +62,12 @@ def train(args):
     # Start training
     start_time = datetime.now()
     best_reward = 0
-    with Logger(args.log_dir) as logger:
-        for episode in range(args.num_episodes + 1):
+    with Logger(LOGS_DIR) as logger:
+        for episode in range(NUM_EPISODES + 1):
             agents = [agent]
-            for i in range(args.num_players - 1):
+            for i in range(NUM_PLAYERS - 1):
                 agents.append(np.random.choice(opponent_agents))
             env.set_agents(agents)
-
-            if args.algorithm == 'nfsp':
-                agents[0].sample_episode_policy()
 
             # Generate data from the environment
             trajectories, payoffs = env.run(is_training=True)
@@ -87,12 +82,12 @@ def train(args):
                 agent.feed(ts)
 
             # Evaluate the performance. Play with random agents.
-            if episode % args.evaluate_every == 0:
-                reward = tournament_random_opponents(env, args.num_eval_games, agent, opponent_agents)[0]
+            if episode % EVAL_EVERY == 0:
+                reward = tournament_random_opponents(env, NUM_EVAL_GAMES, agent, opponent_agents)[0]
                 logger.log_performance(env.timestep, reward)
-                plot_curve(logger.csv_path, logger.fig_path, args.algorithm)
+                plot_curve(logger.csv_path, logger.fig_path)
 
-                percentage_complete = episode / args.num_episodes
+                percentage_complete = episode / NUM_EPISODES
                 if percentage_complete > 0:
                     elapsed_time = datetime.now() - start_time
                     total_time_seconds = elapsed_time.total_seconds() / percentage_complete
@@ -104,26 +99,11 @@ def train(args):
 
                     # Save model
                     print('Saving model')
-                    save_path = os.path.join(args.log_dir, 'model.pth')
+                    save_path = os.path.join(LOGS_DIR, 'model.pth')
                     torch.save(agent, save_path)
 
     print('Model saved in', save_path)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser("DQN/NFSP example in RLCard")
-    parser.add_argument('--env', type=str, default='leduc-holdem',
-            choices=['blackjack', 'leduc-holdem', 'limit-holdem', 'doudizhu', 'mahjong', 'no-limit-holdem', 'uno', 'gin-rummy', 'go_fish', 'hearts'])
-    parser.add_argument('--algorithm', type=str, default='dqn', choices=['dqn', 'nfsp'])
-    parser.add_argument('--cuda', type=str, default='')
-    parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--num_episodes', type=int, default=100000)
-    parser.add_argument('--num_eval_games', type=int, default=5000)
-    parser.add_argument('--evaluate_every', type=int, default=2000)
-    parser.add_argument('--log_dir', type=str, default='experiments/leduc_holdem_dqn_result/')
-    parser.add_argument('--num_players', type=int, default=4)
-
-    args = parser.parse_args()
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda
-    train(args)
+    train()
 

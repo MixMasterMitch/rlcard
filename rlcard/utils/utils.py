@@ -245,7 +245,7 @@ def tournament_random_opponents(env, num, primary_agent, opponent_agents):
         payoffs[i] /= counter
     return payoffs
 
-def plot_curve(csv_path, save_path, algorithm):
+def plot_curve(csv_path, save_path):
     ''' Read data from csv file and plot the results
     '''
     import os
@@ -259,7 +259,7 @@ def plot_curve(csv_path, save_path, algorithm):
             xs.append(int(row['timestep']))
             ys.append(float(row['reward']))
         fig, ax = plt.subplots()
-        ax.plot(xs, ys, label=algorithm)
+        ax.plot(xs, ys, label='win rate')
         ax.set(xlabel='timestep', ylabel='reward')
         ax.legend()
         ax.grid()

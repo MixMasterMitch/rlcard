@@ -67,9 +67,9 @@ class HeartsEnv(Env):
 
         return {
             'obs': obs,
-            'legal_actions': self._get_legal_actions(),
+            'legal_actions': self._get_legal_actions(state['raw_legal_actions']),
             'raw_obs': state,
-            'raw_legal_actions': [a for a in state['legal_actions']],
+            'raw_legal_actions': state['raw_legal_actions'],
             'action_record': self.action_recorder
         }
 
@@ -100,12 +100,10 @@ class HeartsEnv(Env):
         return np.array(self.game.get_payoffs(is_training))
 
     def _decode_action(self, action_id):
-        legal_ids = self._get_legal_actions()
         return self.game.action_list[action_id]
 
-    def _get_legal_actions(self):
-        legal_actions = self.game.get_legal_actions()
-        legal_ids = {self.game.action_space[action]: None for action in legal_actions}
+    def _get_legal_actions(self, raw_legal_actions):
+        legal_ids = {self.game.action_space[action]: None for action in raw_legal_actions}
         return OrderedDict(legal_ids)
 
     @staticmethod
