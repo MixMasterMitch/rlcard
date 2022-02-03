@@ -15,7 +15,8 @@ Date, Hours
 Total: 35.5
 1/28, 2.5
 1/29, 2.5
-1/31, 1.5
+1/31, 3.5
+2/02, 3
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
@@ -141,5 +142,21 @@ Base settings:
 | 7    | [128]     |   250000 |        500000 |     84.9% |       10.3% | Random, RulesV1, RulesV3, TrainedV2 | 0.05 Epsilon End
 
 
+# 4 Player Hearts
+
+| Test | Network    | Episodes | Epsilon Decay | Learning Rate | Decay | vs Random | Info
+----------------------------------------------------------------------------------------------------------------------------
+| PC 1 | [256, 256] |   100000 |        500000 |          0.01 | 0.999 |     15.9% |
+| PC 2 | [256, 256] |   100000 |        500000 |         0.001 | 0.999 |     23.1% |
+| PC 3 | [256, 256] |   100000 |        500000 |        0.0001 | 0.999 |     21.9% |
+| PC 4 | [256, 256] |   100000 |        500000 |       0.00001 | 0.999 |     25.0% |
+| PC 5 | [256, 256] |   100000 |        500000 |      0.000001 | 0.999 |     24.9% |
+| PC 6 | [256, 256] |   100000 |        500000 |     0.0000001 | 0.999 |     22.3% |
+| MAC1 | [512]      |   100000 |        100000 |      0.000005 | 0.999 |     15.3% |
+| MAC2 | [512]      |   100000 |        500000 |      0.000005 | 0.9999|     20.7% |
+| MAC3 | [512]      |   100000 |        500000 |      0.000005 | 0.995 |     20.6% |
+| MAC4 | [1024]     |   100000 |        500000 |      0.000005 | 0.999 |     24.4% |
+
+I have switched over to Hearts now. Programing the mechanics of the game were actually simpler than Go Fish especially without the complex "expected cards" logic. Unforetunately there are many more inputs into the neural network for Hearts than with Go Fish. For example, I only need 13 input values to represent the current hand in Go Fish, but need a full 52 for Hearts. Therefore, I have to train with a much larger neural network. With the larger network I decided to try doing training using my PC GPU. Interestingly, the training is much slower using the GPU. I think this is because the network is still relatively small, so the overhead of transferring input and outputs from CPU to GPU outweighs the benefit of the GPU. But all of my attempts at training so far have been futile. My best trained model can only achieve a 25% win rate in a 4 player game against random players, so it performs basically as well as random players do :( But I kinda expected this. The input space has increased from 87 values for 4-player Go Fish to 393 values for 4-player Hearts and decision making in Hearts is very situational (e.g. when leading a trick, the considerations are quite different than as the last player of a trick). So my next action is going to be to train a handful of more focused networks on specific tasks and situations. The framework I am using is not really setup for this type of multi-network setup so I will need to do some rejiggering of that code to get this going. I will also create a simple rule based Hearts player to get a better baseline for what the neural network should be able to achieve at minimum.
 
 
