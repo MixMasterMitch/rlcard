@@ -64,7 +64,7 @@ class HeartsRuleAgentV1(object):
     def eval_step(self, state):
         ''' Step for evaluation. The same to step
         '''
-        return self.step(state), None
+        return self.step(state)
 
     def _pick_best_action_from_order(self, legal_actions, order):
         indexes = []

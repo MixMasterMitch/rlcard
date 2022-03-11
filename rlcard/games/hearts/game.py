@@ -153,7 +153,11 @@ class HeartsGame:
             round_scores = self._get_round_scores()
             for i, player in enumerate(self.players):
                 player.end_round(round_scores[i])
-            self._init_round()
+
+            if self.is_over():
+                self._print('<< Game over')
+            else:
+                self._init_round()
 
         return self.get_state(self.current_player_turn), self.current_player_turn
 
@@ -239,12 +243,14 @@ class HeartsGame:
                 'hearts_are_broken', boolean - If hearts have currently been broken
                 'passing_cards', boolean - If currently in the passing cards phase of the round
                 'passing_cards_players_to_left', int - Number of players to the left to pass cards to
+                'starting_players_to_left', int - Number of players to the left that leads this round
                 'passed_cards', {Card} - Cards passed by the current player.
                 'is_lead', boolean - If the player is to lead the next trick (an AI hint)
                 'can_sluff', boolean - If the player can currently play a card not of the led suit (an AI hint)
                 'played_cards', {Card}[] - Cards played by each player.
                 'public_void_suits', {Suit -> boolean}[] - If each player is known to be void of each suit or not
                 'trick', Card[] - Current trick
+                'player_trick_position', int - The position in the trick this player is to play at (e.g. 2, means this player is the third player in the trick)
                 'player_hand', {Card} - All of the cards in the current player's hand
                 'round_scores', int[] - The current round score of each player
                 'game_scores', int[] - The game score of each player (not including the current round)
@@ -270,12 +276,14 @@ class HeartsGame:
         state['hearts_are_broken'] = self.hearts_are_broken
         state['passing_cards'] = self.passing_cards
         state['passing_cards_players_to_left'] = self.passing_cards_players_to_left
+        state['starting_players_to_left'] = (self.starting_player - player_id) % self.num_players
         state['passed_cards'] = current_player.passed_cards
         state['is_lead'] = not self.passing_cards and self.current_trick_suit == None
         state['can_sluff'] = not self.passing_cards and not self.current_trick_suit == None and current_player.is_void_of_suit(self.current_trick_suit)
         state['played_cards'] = played_cards
         state['public_void_suits'] = public_void_suits
         state['trick'] = self.current_trick
+        state['player_trick_position'] = None if self.passing_cards else len(self.current_trick)
         state['player_hand'] = current_player.hand
         state['round_scores'] = round_scores
         state['game_scores'] = game_scores
@@ -289,7 +297,7 @@ class HeartsGame:
 
             if is_training:
                 for round_score in round_scores:
-                    payoffs.append(26 - round_score)
+                    payoffs.append(pow((26 - round_score) / 26, 3)) # Score normalized from 0 to 1 where 1 is better than 0. The value is cubed to further emphasize rewards for taking fewer points.
             else:
                 payoffs = round_scores
 
@@ -298,7 +306,7 @@ class HeartsGame:
 
             if is_training:
                 for game_score in game_scores:
-                    payoffs.append(100 - game_score)
+                    payoffs.append((100 - game_score) / 100) # Score normalized from 0 to 1 where 1 is better than 0
             else:
                 winner_indexes = set()
                 winner_score = 100
@@ -328,7 +336,7 @@ class HeartsGame:
             if a_player_got_control:
                 round_scores[i] = 0 if round_score == 26 else 26
             else:
-                self._print('<< Player {} got {} points'.format(i, round_scores[i]))
+                self._print('<< Player {} got {} points ({} total)'.format(i, round_scores[i], self.players[i].game_score + round_scores[i]))
 
         return round_scores
 

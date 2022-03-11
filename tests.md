@@ -17,7 +17,11 @@ Total: 35.5
 1/29, 2.5
 1/31, 3.5
 2/02, 3
-2/03, 1
+2/03, 2
+2/28, 3
+3/01, 2
+3/02, 4
+3/09, 2
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
@@ -159,5 +163,14 @@ Base settings:
 | MAC4 | [1024]     |   100000 |        500000 |      0.000005 | 0.999 |     24.4% |
 
 I have switched over to Hearts now. Programing the mechanics of the game were actually simpler than Go Fish especially without the complex "expected cards" logic. Unforetunately there are many more inputs into the neural network for Hearts than with Go Fish. For example, I only need 13 input values to represent the current hand in Go Fish, but need a full 52 for Hearts. Therefore, I have to train with a much larger neural network. With the larger network I decided to try doing training using my PC GPU. Interestingly, the training is much slower using the GPU. I think this is because the network is still relatively small, so the overhead of transferring input and outputs from CPU to GPU outweighs the benefit of the GPU. But all of my attempts at training so far have been futile. My best trained model can only achieve a 25% win rate in a 4 player game against random players, so it performs basically as well as random players do :( But I kinda expected this. The input space has increased from 87 values for 4-player Go Fish to 393 values for 4-player Hearts and decision making in Hearts is very situational (e.g. when leading a trick, the considerations are quite different than as the last player of a trick). So my next action is going to be to train a handful of more focused networks on specific tasks and situations. The framework I am using is not really setup for this type of multi-network setup so I will need to do some rejiggering of that code to get this going. I will also create a simple rule based Hearts player to get a better baseline for what the neural network should be able to achieve at minimum.
+
+I have created a rule based algorithm for hearts that executes a pretty safe basic strategy (it doesn't try to go for control or anything like that). Against 3 random players, it wins about 94% of the time. And I think this makes sense; basic strategy should enable you to almost always win against random players. I have also reworked the whole training process to accomidate an AI player that internally uses multiple neural networks situationally. I made some other improvements to the training process since I was getting into the weeds of it anyway. In an initial training test of ~650 games and no tuning, the agent gets to a 52% win rate with a positive tragectory to keep improving much more. My hope is restored that I can train an AI with a skill level matching my own. Next step: more training and tuning.
+
+
+| Test | Networks      | Episodes | Epsilon Decay | Learning Rate | Decay | Sync Target | Batch Size | Train Every | vs Random | Info
+------------------------------------------------------------------------------------------------------------------------------------------
+| MAC1 | [256], [1028] |   250000 |       0.99999 |       0.00025 | 0.999 |        1000 |         64 |           3 |     80.1% |
+| MAC1 | [256], [1028] |   150000 |       0.99999 |       0.00025 | 0.99  |        1000 |         64 |           3 |     80.1% |
+
 
 

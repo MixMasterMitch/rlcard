@@ -141,7 +141,7 @@ class Env(object):
         while not self.is_over():
             # Agent plays
             if not is_training:
-                action, _ = self.agents[player_id].eval_step(state)
+                action = self.agents[player_id].eval_step(state)
             else:
                 action = self.agents[player_id].step(state)
 
@@ -165,6 +165,11 @@ class Env(object):
 
         # Payoffs
         payoffs = self.get_payoffs(is_training)
+
+        if is_training:
+            print('Training game complete')
+        else:
+            print('Evaluation game complete')
 
         return trajectories, payoffs
 
@@ -252,16 +257,6 @@ class Env(object):
 
         Returns:
             (string): The action that will be passed to the game engine.
-
-        Note: Must be implemented in the child class.
-        '''
-        raise NotImplementedError
-
-    def _get_legal_actions(self):
-        ''' Get all legal actions for current state.
-
-        Returns:
-            (list): A list of legal actions' id.
 
         Note: Must be implemented in the child class.
         '''

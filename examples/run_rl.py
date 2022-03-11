@@ -5,18 +5,20 @@ import argparse
 
 import torch
 import numpy as np
+from pathlib import Path
 from datetime import datetime
 
 import rlcard
 from rlcard import models
-from rlcard.agents import RandomAgent, DQNAgent
-from rlcard.utils import get_device, set_seed, tournament_random_opponents, reorganize, Logger, plot_curve
+from rlcard.agents import RandomAgent, HeartsDQNAgent
+from rlcard.utils import get_device, set_seed, tournament_random_opponents, reorganize, Logger, plot_curve, MetricLogger
 
 NUM_PLAYERS = 4
-NUM_EPISODES = 10_000
-NUM_EVAL_GAMES = 1_000
-EVAL_EVERY = 1_000
-LOGS_DIR = 'experiments/hearts_v1_4_player_model_6'
+NUM_EPISODES = 150000
+NUM_EVAL_GAMES = 1000
+EVAL_EVERY = 5000
+LOGS_DIR = Path('experiments/hearts_v2_4_player_model_3')
+LOGS_DIR.mkdir(parents=True)
 
 def train():
 
@@ -28,20 +30,11 @@ def train():
     set_seed(seed)
 
     # Make the environment with seed
-    env = rlcard.make('hearts', config={'seed': seed, 'game_num_players': NUM_PLAYERS})
+    env = rlcard.make('hearts', config={'seed': seed, 'game_num_players': NUM_PLAYERS, 'game_debug': False, 'game_is_round_mode': True })
+    eval_env = rlcard.make('hearts', config={'seed': seed, 'game_num_players': NUM_PLAYERS, 'game_debug': False, 'game_is_round_mode': False })
 
     # Initialize the training agent
-    agent = DQNAgent(num_actions=env.num_actions,
-                     state_shape=env.state_shape[0],
-                     mlp_layers=[1024],
-                     discount_factor=0.999,
-                     # update_target_estimator_every=2000,
-                     # replay_memory_init_size=500,
-                     batch_size=64,
-                     epsilon_decay_steps=500000,
-                     # epsilon_end=0.05,
-                     learning_rate=0.000005,
-                     device=device)
+    agent = HeartsDQNAgent(env, device=device)
 
     opponent_agents = []
 
@@ -62,7 +55,8 @@ def train():
     # Start training
     start_time = datetime.now()
     best_reward = 0
-    with Logger(LOGS_DIR) as logger:
+    logger = MetricLogger(LOGS_DIR)
+    with Logger(LOGS_DIR) as episode_logger:
         for episode in range(NUM_EPISODES + 1):
             agents = [agent]
             for i in range(NUM_PLAYERS - 1):
@@ -79,13 +73,19 @@ def train():
             # Here, we assume that DQN always plays the first position
             # and the other players play randomly (if any)
             for ts in trajectories[0]:
-                agent.feed(ts)
+                q, loss, epsilon = agent.feed(ts)
+                reward = ts[2]
+                logger.log_step(reward, loss, q, epsilon)
+            logger.log_episode()
+
+            if episode % 50  == 0:
+                logger.record(episode, step=env.timestep)
 
             # Evaluate the performance. Play with random agents.
             if episode % EVAL_EVERY == 0:
-                reward = tournament_random_opponents(env, NUM_EVAL_GAMES, agent, opponent_agents)[0]
-                logger.log_performance(env.timestep, reward)
-                plot_curve(logger.csv_path, logger.fig_path)
+                reward = tournament_random_opponents(eval_env, NUM_EVAL_GAMES, agent, opponent_agents)[0]
+                episode_logger.log_performance(env.timestep, reward)
+                plot_curve(episode_logger.csv_path, episode_logger.fig_path)
 
                 percentage_complete = episode / NUM_EPISODES
                 if percentage_complete > 0:
