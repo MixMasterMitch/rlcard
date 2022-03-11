@@ -77,15 +77,17 @@ class HeartsDQNAgent(object):
         self.hyper_params = HyperParams()
 
         pass_hidden_layer_options = [84, 128, 233]
+        pass_hidden_layer = random.choice(pass_hidden_layer_options)
+        print("Passing Hidden Layer Sizes: {}".format(pass_hidden_layer))
         playing_hidden_layer_options = [222, 313, 785]
-        hidden_layer_sizes = [random.choice(pass_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options)]
-        print("Hidden Layer Sizes: {}".format(hidden_layer_sizes))
-        self.pass_selection_model = Model(env.passing_state_shape, [hidden_layer_sizes[0]], env.action_shape, self.hyper_params, device)
-        self.lead_model           = Model(env.playing_state_shape, [hidden_layer_sizes[1]], env.action_shape, self.hyper_params, device)
-        self.sluff_model          = Model(env.playing_state_shape, [hidden_layer_sizes[2]], env.action_shape, self.hyper_params, device)
-        self.second_player_model  = Model(env.playing_state_shape, [hidden_layer_sizes[3]], env.action_shape, self.hyper_params, device)
-        self.thrid_player_model   = Model(env.playing_state_shape, [hidden_layer_sizes[4]], env.action_shape, self.hyper_params, device)
-        self.fourth_player_model  = Model(env.playing_state_shape, [hidden_layer_sizes[5]], env.action_shape, self.hyper_params, device)
+        playing_hidden_layer = random.choice(playing_hidden_layer_options)
+        print("Playing Hidden Layer Sizes: {}".format(playing_hidden_layer))
+        self.pass_selection_model = Model(env.passing_state_shape, [pass_hidden_layer], env.action_shape, self.hyper_params, device)
+        self.lead_model           = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
+        self.sluff_model          = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
+        self.second_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
+        self.thrid_player_model   = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
+        self.fourth_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
 
     def feed(self, ts):
         (state, action, reward, next_state, done) = tuple(ts)

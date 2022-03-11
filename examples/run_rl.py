@@ -17,7 +17,7 @@ NUM_PLAYERS = 4
 NUM_EPISODES = 150000
 NUM_EVAL_GAMES = 1000
 EVAL_EVERY = 5000
-LOGS_DIR = Path('experiments/hearts_v2_4_player_model_5')
+LOGS_DIR = Path('experiments/hearts_v2_4_player_model_4')
 LOGS_DIR.mkdir(parents=True)
 
 def train():
@@ -26,7 +26,7 @@ def train():
     device = get_device()
 
     # Seed numpy, torch, random
-    seed = 42
+    seed = 54
     set_seed(seed)
 
     # Make the environment with seed
