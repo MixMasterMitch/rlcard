@@ -166,10 +166,10 @@ class Env(object):
         # Payoffs
         payoffs = self.get_payoffs(is_training)
 
-        if is_training:
-            print('Training game complete')
-        else:
-            print('Evaluation game complete')
+        # if is_training:
+        #     print('Training game complete')
+        # else:
+        #     print('Evaluation game complete')
 
         return trajectories, payoffs
 

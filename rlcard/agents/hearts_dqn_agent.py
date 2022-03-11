@@ -12,37 +12,43 @@ class HyperParams():
         # How many experiences to keep in memory. Should be in the thousands. A larger memory gives a larger
         # range of experiences to learn from, but also means that older experiences are still around that
         # have already been throughly learned from and not adding value.
-        self.replay_memory_size = 20000
+        self.replay_memory_size = random.choice([2000, 20000, 200000])
+        print("Replay Memory Size: {}".format(self.replay_memory_size))
 
         # How many experiences from the replay memory to use at a time when training. Should be a value between 1 and 128.
         # A larger value helps average out noise in the experiences, but also increases training computation.
-        self.batch_size = 64
+        self.batch_size = random.choice([32, 64, 128, 256])
+        print("Batch Size: {}".format(self.batch_size))
 
         # The minimum number of experiences needed in memory before starting training. A larger number enables more experiences
         # to be collected quickly without slowing down to do training. But too large a number reduces to value those early
         # experiences provide to the training.
-        self.burnin = 200
+        self.burnin = 500
 
         # How often to update the network after receiving a new transition. Should be an integer >= 1.
         # A larger value enables the model to see more new experiences before measuring loss and updating again.
-        self.train_every = 3
+        self.train_every = random.choice([1, 3, 5])
+        print("Train Every: {}".format(self.train_every))
 
         # How often to copy the online network to the target network in DDQN. Should be in the thousands.
         # A larger value keeps the target network locked for longer, increasing the stability of the target,
         # but a larger value also causes the target and online networks to get further out of sync with each other
         # meaning that when a sync does happen it is a larger shock to the training process.
-        self.sync_target_network_every = 1000
+        self.sync_target_network_every = random.choice([100, 1000, 100000])
+        print("Sync Target Every: {}".format(self.sync_target_network_every))
 
         # How strongly to adjust network weights by on each update. A higher value speeds up learning
         # but increases risk of overfitting or thrashing of the weights. Should be a value
-        self.learning_rate = 0.00025
+        self.learning_rate = random.choice([0.001, 0.0001, 0.00001, 0.000001])
+        print("Learning Rate: {}".format(self.learning_rate))
 
         # The Q function is recursive (reward of action + Q value of best action for next state).
         # So to incentivize getting to a solution quicker (i.e. reduce wandering and looping action sequences)
         # each future action Q value is slightly discounted a small amount. This is often called gamma.
         # Should be a value just below 1.0. A lower value will cut out longer action sequences. This trims
         # the fat of unnecessarily long action sequences, but could accidentally cut out a longer optimal path.
-        self.discount_factor = 0.9
+        self.discount_factor = random.choice([0.9, 0.99, 0.999])
+        print("Discount Factor: {}".format(self.discount_factor))
 
         # Exploration Rate (also called epsilon) dictates what percentage of the time the model makes a random choice
         # instead of using the network. Making random choices allows the network to explore, evolve, learn, and try
@@ -50,14 +56,17 @@ class HyperParams():
 
         # Should be a high value (e.g. 0.9 - 1.0) in order to effectively explore lots of options
         # and not get sucked into converging on a sub-optimal network.
-        self.exploration_rate_max = 1.0
+        self.exploration_rate_max = random.choice([0.8, 0.9, 1.0])
+        print("Max Exploration Rate: {}".format(self.exploration_rate_max))
         # Should be a low value (e.g. 0.05 - 0.2) in order for the network to refine itself and
         # work towards an optimal network. Too low and it will take a long time to learn.
         # Too high and it will be thrown off by the randomness and have a hard time converging.
-        self.exploration_rate_min = 0.1
+        self.exploration_rate_min = random.choice([0.1, 0.15, 0.2])
+        print("Min Exploration Rate: {}".format(self.exploration_rate_min))
         # Should be value just below 1.0. Faster decay will help the model converge quicker.
         # Slower decay will give it more opportunity to explore and land on a more globablly optimal network.
-        self.exploration_rate_decay = 0.99999
+        self.exploration_rate_decay = random.choice([0.99995, 0.99999, 0.999995])
+        print("Exploration Rate Decay: {}".format(self.exploration_rate_decay))
 
 class HeartsDQNAgent(object):
 
@@ -67,12 +76,16 @@ class HeartsDQNAgent(object):
         self.device = device
         self.hyper_params = HyperParams()
 
-        self.pass_selection_model = Model(env.passing_state_shape, [256], env.action_shape, self.hyper_params, device)
-        self.lead_model           = Model(env.playing_state_shape, [1028], env.action_shape, self.hyper_params, device)
-        self.sluff_model          = Model(env.playing_state_shape, [1028], env.action_shape, self.hyper_params, device)
-        self.second_player_model  = Model(env.playing_state_shape, [1028], env.action_shape, self.hyper_params, device)
-        self.thrid_player_model   = Model(env.playing_state_shape, [1028], env.action_shape, self.hyper_params, device)
-        self.fourth_player_model  = Model(env.playing_state_shape, [1028], env.action_shape, self.hyper_params, device)
+        pass_hidden_layer_options = [84, 128, 233]
+        playing_hidden_layer_options = [222, 313, 785]
+        hidden_layer_sizes = [random.choice(pass_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options), random.choice(playing_hidden_layer_options)]
+        print("Hidden Layer Sizes: {}".format(hidden_layer_sizes))
+        self.pass_selection_model = Model(env.passing_state_shape, [hidden_layer_sizes[0]], env.action_shape, self.hyper_params, device)
+        self.lead_model           = Model(env.playing_state_shape, [hidden_layer_sizes[1]], env.action_shape, self.hyper_params, device)
+        self.sluff_model          = Model(env.playing_state_shape, [hidden_layer_sizes[2]], env.action_shape, self.hyper_params, device)
+        self.second_player_model  = Model(env.playing_state_shape, [hidden_layer_sizes[3]], env.action_shape, self.hyper_params, device)
+        self.thrid_player_model   = Model(env.playing_state_shape, [hidden_layer_sizes[4]], env.action_shape, self.hyper_params, device)
+        self.fourth_player_model  = Model(env.playing_state_shape, [hidden_layer_sizes[5]], env.action_shape, self.hyper_params, device)
 
     def feed(self, ts):
         (state, action, reward, next_state, done) = tuple(ts)

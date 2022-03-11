@@ -167,10 +167,12 @@ I have switched over to Hearts now. Programing the mechanics of the game were ac
 I have created a rule based algorithm for hearts that executes a pretty safe basic strategy (it doesn't try to go for control or anything like that). Against 3 random players, it wins about 94% of the time. And I think this makes sense; basic strategy should enable you to almost always win against random players. I have also reworked the whole training process to accomidate an AI player that internally uses multiple neural networks situationally. I made some other improvements to the training process since I was getting into the weeds of it anyway. In an initial training test of ~650 games and no tuning, the agent gets to a 52% win rate with a positive tragectory to keep improving much more. My hope is restored that I can train an AI with a skill level matching my own. Next step: more training and tuning.
 
 
-| Test | Networks      | Episodes | Epsilon Decay | Learning Rate | Decay | Sync Target | Batch Size | Train Every | vs Random | Info
-------------------------------------------------------------------------------------------------------------------------------------------
-| MAC1 | [256], [1028] |   250000 |       0.99999 |       0.00025 | 0.999 |        1000 |         64 |           3 |     80.1% |
-| MAC1 | [256], [1028] |   150000 |       0.99999 |       0.00025 | 0.99  |        1000 |         64 |           3 |     80.1% |
+| Test | Networks                            | Episodes | E. Max | E. Min | E. Decay |      LR | Discount | Sync Target | Batch Size | Train Every | vs Random | Info
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| MAC1 | [256, 1028, 1028, 1028, 1028, 1028] |   250000 |    1.0 |    0.1 |  0.99999 | 0.00025 |    0.999 |        1000 |         64 |           3 |     80.1% |
+| MAC2 | [256, 1028, 1028, 1028, 1028, 1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |           3 |     80.1% |
+| MAC3 | [256, 1028, 1028, 1028, 1028, 1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |           3 |     80.1% |
+| MAC5 |       [84, 785, 785, 785, 222, 785] |   150000 |    0.8 |    0.1 | 0.999995 |   1e-05 |      0.9 |      100000 |         32 |           1 |       TBD |
 
 
 
