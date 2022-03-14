@@ -88,7 +88,8 @@ class HeartsDQNAgent(object):
         self.second_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
         self.thrid_player_model   = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
         self.fourth_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
-
+        print('TEST,{},{},150000,{},{},{},{},{},{},{},{},{},TBD'.format(pass_hidden_layer, playing_hidden_layer, self.hyper_params.exploration_rate_max, self.hyper_params.exploration_rate_min, self.hyper_params.exploration_rate_decay, self.hyper_params.learning_rate, self.hyper_params.discount_factor, self.hyper_params.sync_target_network_every, self.hyper_params.batch_size, self.hyper_params.replay_memory_size, self.hyper_params.train_every))
+        print('| TEST | [{}], [{}] | 150000 | {} | {} | {} | {} | {} | {} | {} | {} | {} | TBD |'.format(pass_hidden_layer, playing_hidden_layer, self.hyper_params.exploration_rate_max, self.hyper_params.exploration_rate_min, self.hyper_params.exploration_rate_decay, self.hyper_params.learning_rate, self.hyper_params.discount_factor, self.hyper_params.sync_target_network_every, self.hyper_params.batch_size, self.hyper_params.replay_memory_size, self.hyper_params.train_every))
     def feed(self, ts):
         (state, action, reward, next_state, done) = tuple(ts)
         model = self._get_model_for_state(state['raw_obs'])
