@@ -13,11 +13,13 @@ from rlcard import models
 from rlcard.agents import RandomAgent, HeartsDQNAgent
 from rlcard.utils import get_device, set_seed, tournament_random_opponents, reorganize, Logger, plot_curve, MetricLogger
 
+TEST = 20
+
 NUM_PLAYERS = 4
 NUM_EPISODES = 150000
 NUM_EVAL_GAMES = 1000
 EVAL_EVERY = 5000
-LOGS_DIR = Path('experiments/hearts_v2_4_player_model_10')
+LOGS_DIR = Path('experiments/hearts_v2_4_player_model_{}'.format(TEST))
 LOGS_DIR.mkdir(parents=True)
 
 def train():
@@ -26,7 +28,13 @@ def train():
     device = get_device()
 
     # Seed numpy, torch, random
-    seed = 60
+    # MAC 1-9 are 51-59 (double check)
+    # MAC 10-19 are 70-79
+    # MAC 20+ are 120+
+    # PC 1-9 are 41-49 (double check)
+    # PC 10 is 60
+    # PC 11+ are 211+
+    seed = 100 + TEST
     set_seed(seed)
 
     # Make the environment with seed
@@ -34,7 +42,7 @@ def train():
     eval_env = rlcard.make('hearts', config={'seed': seed, 'game_num_players': NUM_PLAYERS, 'game_debug': False, 'game_is_round_mode': False })
 
     # Initialize the training agent
-    agent = HeartsDQNAgent(env, device=device)
+    agent = HeartsDQNAgent(env, device=device, test=TEST)
 
     opponent_agents = []
 

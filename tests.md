@@ -25,6 +25,9 @@ Total: 35.5
 3/10, 1
 3/13, 1
 3/14, 1
+3/16, 1
+3/17, 2
+3/18, 2
 
 # 2 Player, knowledge of cards players must have, but no knowledge of cards players must NOT have
 Basic Rule-base Model 1 =  0.1598 (58% win) vs random
@@ -170,24 +173,37 @@ I have switched over to Hearts now. Programing the mechanics of the game were ac
 I have created a rule based algorithm for hearts that executes a pretty safe basic strategy (it doesn't try to go for control or anything like that). Against 3 random players, it wins about 94% of the time. And I think this makes sense; basic strategy should enable you to almost always win against random players. I have also reworked the whole training process to accomidate an AI player that internally uses multiple neural networks situationally. I made some other improvements to the training process since I was getting into the weeds of it anyway. In an initial training test of ~650 games and no tuning, the agent gets to a 52% win rate with a positive tragectory to keep improving much more. My hope is restored that I can train an AI with a skill level matching my own. Next step: more training and tuning.
 
 
-| Test | Networks      | Episodes | E. Max | E. Min | E. Decay |      LR | Discount | Sync Target | Batch Size | Memory Size | Train Every | vs Random | Info
+| Test  | Networks      | Episodes | E. Max | E. Min | E. Decay |      LR | Discount | Sync Target | Batch Size | Memory Size | Train Every | vs Random | Info
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-| MAC1 | [256], [1028] |   250000 |    1.0 |    0.1 |  0.99999 | 0.00025 |    0.999 |        1000 |         64 |       20000 |           3 |     80.1% |
-| MAC2 | [256], [1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |       20000 |           3 |     79.8% |
-| MAC3 | [256], [1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |       20000 |           3 |     81.9% |
-| MAC4 |  [128], [785] |   150000 |    0.9 |    0.1 |  0.99999 |   1e-06 |     0.99 |        1000 |        256 |        2000 |           5 |     49.1% |
-| MAC5 |   [84], [313] |   150000 |    1.0 |    0.1 |  0.99999 |   1e-05 |      0.9 |      100000 |         64 |        2000 |           1 |     30.8% |
-| MAC6 |   [84], [313] |   150000 |    0.9 |    0.2 |  0.99995 |   1e-05 |    0.999 |      100000 |         32 |      200000 |           3 |     29.6% |
-| MAC7 |  [128], [313] |   150000 |    1.0 |   0.15 |  0.99999 |   0.001 |      0.9 |      100000 |        128 |        2000 |           5 |     26.3% |
-| MAC8 |  [128], [313] |   150000 |    0.8 |   0.15 |  0.99999 |  0.0001 |      0.9 |      100000 |         64 |      200000 |           1 |       TBD |
-| MAC9 |  [233], [785] |   150000 |    0.9 |    0.2 |  0.99995 |   0.001 |      0.9 |        1000 |         32 |        2000 |           5 |       TBD |
-| PC 1 |  [128], [313] |   150000 |    1.0 |   0.15 | 0.999995 |   1e-06 |    0.999 |         100 |        128 |       20000 |           1 |     83.0% |
-| PC 2 |   [84], [785] |   150000 |    0.8 |    0.1 | 0.999995 |   1e-05 |      0.9 |      100000 |         32 |      200000 |           1 |     26.8% |
-| PC 3 |  [128], [785] |   150000 |    1.0 |    0.2 |  0.99995 |   1e-06 |     0.99 |         100 |        128 |        2000 |           5 |     37.2% |
-| PC 4 |  [233], [222] |   150000 |    0.8 |    0.1 |  0.99995 |   1e-04 |     0.99 |        1000 |         32 |       20000 |           1 |     78.9% |
-| PC 5 |  [128], [222] |   150000 |    0.9 |    0.1 |  0.99995 |   0.001 |     0.99 |        1000 |        256 |       20000 |           3 |     81.1% |
-| PC 6 |  [233], [222] |   150000 |    1.0 |    0.1 | 0.999995 |  0.0001 |    0.999 |      100000 |        256 |        2000 |           1 |     22.2% |
-| PC 7 |  [128], [313] |   150000 |    0.9 |   0.15 | 0.999995 |   1e-06 |    0.999 |      100000 |         32 |       20000 |           3 |     32.2% |
-| PC 8 |   [84], [222] |   150000 |    0.8 |    0.2 |  0.99999 |   1e-05 |    0.999 |      100000 |        128 |      200000 |           1 |       TBD |
-| PC 9 |   [84], [785] |   150000 |    1.0 |    0.1 | 0.999995 |   1e-05 |    0.999 |         100 |        128 |        2000 |           3 |     81.0% |
-| PC10 |   [84], [222] |   150000 |    0.9 |   0.15 |  0.99999 |   1e-05 |      0.9 |         100 |        128 |       20000 |           5 |       TBD |
+| MAC1  | [256], [1028] |   250000 |    1.0 |    0.1 |  0.99999 | 0.00025 |    0.999 |        1000 |         64 |       20000 |           3 |     80.1% |
+| MAC2  | [256], [1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |       20000 |           3 |     79.8% |
+| MAC3  | [256], [1028] |   150000 |    1.0 |    0.1 |  0.99999 | 0.00025 |     0.99 |        1000 |         64 |       20000 |           3 |     81.9% |
+| MAC4  |  [128], [785] |   150000 |    0.9 |    0.1 |  0.99999 |   1e-06 |     0.99 |        1000 |        256 |        2000 |           5 |     49.1% |
+| MAC5  |   [84], [313] |   150000 |    1.0 |    0.1 |  0.99999 |   1e-05 |      0.9 |      100000 |         64 |        2000 |           1 |     30.8% |
+| MAC6  |   [84], [313] |   150000 |    0.9 |    0.2 |  0.99995 |   1e-05 |    0.999 |      100000 |         32 |      200000 |           3 |     29.6% |
+| MAC7  |  [128], [313] |   150000 |    1.0 |   0.15 |  0.99999 |   0.001 |      0.9 |      100000 |        128 |        2000 |           5 |     26.3% |
+| MAC8  |  [128], [313] |   150000 |    0.8 |   0.15 |  0.99999 |  0.0001 |      0.9 |      100000 |         64 |      200000 |           1 |     37.0% |
+| MAC9  |  [233], [785] |   150000 |    0.9 |    0.2 |  0.99995 |   0.001 |      0.9 |        1000 |         32 |        2000 |           5 |     76.5% |
+| MAC10 |  [233], [785] |   150000 |    0.9 |    0.1 |  0.99995 |   1e-06 |      0.9 |        1000 |        128 |        2000 |           5 |     29.0% |
+| MAC11 |   [84], [785] |   150000 |    0.8 |    0.1 | 0.999995 |  0.0001 |     0.99 |         100 |         32 |       20000 |           3 |     83.6% |
+| MAC12 |  [233], [222] |   150000 |    1.0 |    0.2 | 0.999995 |   1e-05 |     0.99 |      100000 |         64 |        2000 |           3 |     24.5% |
+| MAC13 |  [128], [313] |   150000 |    0.9 |    0.2 |  0.99995 |  0.0001 |     0.99 |        1000 |         32 |       20000 |           5 |     84.8% |
+| MAC14 |  [128], [313] |   150000 |    0.8 |   0.15 |  0.99995 |   1e-05 |      0.9 |         100 |         32 |      200000 |           3 |     76.9% |
+| MAC15 |   [84], [785] |   150000 |    1.0 |    0.2 |  0.99999 |   1e-06 |    0.999 |         100 |        256 |       20000 |           3 |       TBD |
+| MAC16 |  [128], [313] |   150000 |    0.9 |    0.1 |  0.99999 |   1e-05 |      0.9 |         100 |        256 |       20000 |           3 |     79.5% |
+| MAC17 |  [233], [222] |   150000 |    0.9 |   0.15 | 0.999995 |  0.0001 |      0.9 |         100 |        128 |       20000 |           1 |       TBD |
+| MAC18 |   [84], [785] |   150000 |    0.9 |    0.1 | 0.999995 |   1e-05 |    0.999 |      100000 |         32 |        2000 |           3 |       TBD |
+| MAC19 |  [128], [222] |   150000 |    0.8 |    0.2 | 0.999995 |  0.0001 |      0.9 |      100000 |        256 |        2000 |           3 |       TBD |
+| MAC20 |  [128], [785] |   150000 |    0.9 |    0.1 |  0.99995 |   1e-06 |      0.9 |      100000 |         64 |      200000 |           1 |       TBD |
+| PC1   |  [128], [313] |   150000 |    1.0 |   0.15 | 0.999995 |   1e-06 |    0.999 |         100 |        128 |       20000 |           1 |     83.0% |
+| PC2   |   [84], [785] |   150000 |    0.8 |    0.1 | 0.999995 |   1e-05 |      0.9 |      100000 |         32 |      200000 |           1 |     26.8% |
+| PC3   |  [128], [785] |   150000 |    1.0 |    0.2 |  0.99995 |   1e-06 |     0.99 |         100 |        128 |        2000 |           5 |     37.2% |
+| PC4   |  [233], [222] |   150000 |    0.8 |    0.1 |  0.99995 |   1e-04 |     0.99 |        1000 |         32 |       20000 |           1 |     78.9% |
+| PC5   |  [128], [222] |   150000 |    0.9 |    0.1 |  0.99995 |   0.001 |     0.99 |        1000 |        256 |       20000 |           3 |     81.1% |
+| PC6   |  [233], [222] |   150000 |    1.0 |    0.1 | 0.999995 |  0.0001 |    0.999 |      100000 |        256 |        2000 |           1 |     22.2% |
+| PC7   |  [128], [313] |   150000 |    0.9 |   0.15 | 0.999995 |   1e-06 |    0.999 |      100000 |         32 |       20000 |           3 |     32.2% |
+| PC8   |   [84], [222] |   150000 |    0.8 |    0.2 |  0.99999 |   1e-05 |    0.999 |      100000 |        128 |      200000 |           1 |       TBD |
+| PC9   |   [84], [785] |   150000 |    1.0 |    0.1 | 0.999995 |   1e-05 |    0.999 |         100 |        128 |        2000 |           3 |     81.0% |
+| PC10  |   [84], [222] |   150000 |    0.9 |   0.15 |  0.99999 |   1e-05 |      0.9 |         100 |        128 |       20000 |           5 |       TBD |
+
+After doing some more training and tuning, I could only get an AI to an 82% win rate (remember, the target is >94%). :( I looked into some mechanisms to systematically tune the parameters, but I couldn’t easily integrate them with this card training environment. So I followed another approach I saw online: try random values until you find good ones and can start to see which parameters and combinations of parameters have the most impact. I have done 17 training runs, but not a lot of clear signal in the data yet. I have managed to get to an 85% win rate, but that is still not as high as I want. Against my simple rule based agent, the AI’s win rate is only 4%, so I doubt it could beat me very often either. Multiple blogs have suggested that if an AI is not learning as well as expected, there is often a bug in the training process. I am not sure where to start to validate everything, but I guess this is my next thing to try in addition to more random parameter training runs.

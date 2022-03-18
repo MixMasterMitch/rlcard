@@ -70,7 +70,7 @@ class HyperParams():
 
 class HeartsDQNAgent(object):
 
-    def __init__(self, env, device):
+    def __init__(self, env, device, test):
         self.use_raw_action = False
         self.use_raw_state = False
         self.device = device
@@ -88,8 +88,22 @@ class HeartsDQNAgent(object):
         self.second_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
         self.thrid_player_model   = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
         self.fourth_player_model  = Model(env.playing_state_shape, [playing_hidden_layer], env.action_shape, self.hyper_params, device)
-        print('TEST,{},{},150000,{},{},{},{},{},{},{},{},{},TBD'.format(pass_hidden_layer, playing_hidden_layer, self.hyper_params.exploration_rate_max, self.hyper_params.exploration_rate_min, self.hyper_params.exploration_rate_decay, self.hyper_params.learning_rate, self.hyper_params.discount_factor, self.hyper_params.sync_target_network_every, self.hyper_params.batch_size, self.hyper_params.replay_memory_size, self.hyper_params.train_every))
-        print('| TEST | [{}], [{}] | 150000 | {} | {} | {} | {} | {} | {} | {} | {} | {} | TBD |'.format(pass_hidden_layer, playing_hidden_layer, self.hyper_params.exploration_rate_max, self.hyper_params.exploration_rate_min, self.hyper_params.exploration_rate_decay, self.hyper_params.learning_rate, self.hyper_params.discount_factor, self.hyper_params.sync_target_network_every, self.hyper_params.batch_size, self.hyper_params.replay_memory_size, self.hyper_params.train_every))
+        print('MAC{},{},{},150000,{},{},{},{},{},{},{},{},{},TBD'.format(test, pass_hidden_layer, playing_hidden_layer, self.hyper_params.exploration_rate_max, self.hyper_params.exploration_rate_min, self.hyper_params.exploration_rate_decay, self.hyper_params.learning_rate, self.hyper_params.discount_factor, self.hyper_params.sync_target_network_every, self.hyper_params.batch_size, self.hyper_params.replay_memory_size, self.hyper_params.train_every))
+        networks_string = '[{}], [{}]'.format(pass_hidden_layer, playing_hidden_layer).rjust(13, ' ')
+        e_max_string = '{}'.format(self.hyper_params.exploration_rate_max).rjust(6, ' ')
+        e_min_string = '{}'.format(self.hyper_params.exploration_rate_min).rjust(6, ' ')
+        e_decay_string = '{}'.format(self.hyper_params.exploration_rate_decay).rjust(8, ' ')
+        lr_string = '{}'.format(self.hyper_params.learning_rate).rjust(7, ' ')
+        discount_string = '{}'.format(self.hyper_params.discount_factor).rjust(8, ' ')
+        sync_string = '{}'.format(self.hyper_params.sync_target_network_every).rjust(11, ' ')
+        batch_string = '{}'.format(self.hyper_params.batch_size).rjust(10, ' ')
+        memory_string = '{}'.format(self.hyper_params.replay_memory_size).rjust(11, ' ')
+        train_string = '{}'.format(self.hyper_params.train_every).rjust(11, ' ')
+        print('| MAC{} | {} |   150000 | {} | {} | {} | {} | {} | {} | {} | {} | {} |       TBD |'.format(test, networks_string, e_max_string, e_min_string, e_decay_string, lr_string, discount_string, sync_string, batch_string, memory_string, train_string))
+
+    def set_device(self, device):
+        self.device = device
+
     def feed(self, ts):
         (state, action, reward, next_state, done) = tuple(ts)
         model = self._get_model_for_state(state['raw_obs'])
